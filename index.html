@@ -13,7 +13,7 @@ canvas { display:block; margin:0 auto; }
 <body>
 
 <script>
-let pigs, box, scoreText, highText, missText;
+let pigs, cup, scoreText, highText, missText;
 let score = 0, misses = 0;
 let highScore = localStorage.getItem('pigHighScore') || 0;
 const MAX_MISSES = 15;
@@ -32,7 +32,7 @@ new Phaser.Game(config);
 
 function preload() {
   this.load.image('bg','assets/IMG_2835.jpeg');    // background
-  this.load.image('box','assets/IMG_2837.jpeg');   // cup/box
+  this.load.image('cup','assets/IMG_2837.jpeg');   // cup
   this.load.image('pig','assets/IMG_2836.jpeg');   // pig
 }
 
@@ -43,21 +43,22 @@ function create() {
   // Background
   this.add.image(w/2,h/2,'bg').setDisplaySize(w,h);
 
-  // Score UI
+  // UI
   scoreText = this.add.text(20,20,'Score: 0',{font:'24px Arial',fill:'#000'});
   highText = this.add.text(20,50,'High: '+highScore,{font:'20px Arial',fill:'#000'});
   missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#aa0000'});
 
-  // Cup / box (static physics, immovable, always visible)
-  box = this.physics.add.sprite(w/2,h-100,'box');
-  box.setDisplaySize(150,150).setOrigin(0.5,1);
-  box.body.setImmovable(true);      // Prevents cup from being moved by physics
-  box.body.allowGravity = false;    // Cup unaffected by gravity
-  box.setDepth(2);                  // Always render above background
+  // Cup sprite (dynamic but immovable)
+  cup = this.physics.add.sprite(w/2,h-100,'cup')
+             .setDisplaySize(150,150)
+             .setOrigin(0.5,1);
+  cup.body.allowGravity = false;   // no gravity
+  cup.body.immovable = true;       // cannot be pushed
+  cup.setDepth(2);                  // always on top
 
-  // Cup follows pointer horizontally
-  this.input.on('pointermove', function (pointer) {
-    box.x = Phaser.Math.Clamp(pointer.x, box.displayWidth/2, w - box.displayWidth/2);
+  // Cup follows pointer
+  this.input.on('pointermove', function(pointer){
+    cup.x = Phaser.Math.Clamp(pointer.x, cup.displayWidth/2, w - cup.displayWidth/2);
   });
 
   // Pigs group
@@ -70,10 +71,10 @@ function create() {
     callback: ()=>spawnPig.call(this)
   });
 
-  // Catch detection — only destroy the pig, never the cup
-  this.physics.add.overlap(pigs, box, (pigObj, cupObj) => {
+  // Catch pigs
+  this.physics.add.overlap(pigs, cup, (pigObj, cupObj) => {
     if (!pigObj.active) return;
-    pigObj.destroy(); // cupObj (box) never destroyed
+    pigObj.destroy();   // ONLY destroy pig
     score++;
     scoreText.setText('Score: '+score);
     if(score > highScore){
@@ -129,9 +130,8 @@ function gameOver(){
       .setInteractive()
       .once('pointerdown',()=>resetGame.call(this));
 
-  box.setDepth(2); // ensure cup remains on top of overlay
+  cup.setDepth(2); // cup always above overlay
 }
 </script>
-
 </body>
 </html>
