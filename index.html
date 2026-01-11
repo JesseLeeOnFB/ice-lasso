@@ -34,7 +34,7 @@ new Phaser.Game(config);
 
 function preload() {
   this.load.image('bg','assets/IMG_2835.jpeg');    // background
-  this.load.image('cup','assets/IMG_2837.png');    // cup (transparent)
+  this.load.image('cup','assets/IMG_2837.png');    // cropped cup
   this.load.image('pig','assets/IMG_2836.jpeg');   // pig
 }
 
@@ -50,7 +50,7 @@ function create() {
   highText = this.add.text(20,50,'High: '+highScore,{font:'20px Arial',fill:'#000'});
   missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#aa0000'});
 
-  // Cup (smaller, always visible)
+  // Cup (smaller, cropped)
   cup = this.add.image(w/2,h-150,'cup').setDisplaySize(150,150).setOrigin(0.5,1);
 
   // Move cup with pointer
