@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <style>
-  body { margin:0; background:#5dade2; }
+  body { margin:0; background:#aeefff; }
   canvas { display:block; margin:0 auto; }
 </style>
 </head>
@@ -23,23 +23,25 @@ document.addEventListener('click', function initGame(){
     document.body.innerHTML=''; // remove start text
 
     const config = {
-        type: Phaser.CANVAS, // forces better mobile compatibility
+        type: Phaser.CANVAS,
         width: window.innerWidth*0.95,
         height: window.innerHeight*0.95,
-        physics:{ default:'arcade', arcade:{ gravity:{y:350}, debug:false } },
+        physics:{ default:'arcade', arcade:{ gravity:{y:180}, debug:false } },
         scale:{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
         scene: {
             preload: function(){
                 // Placeholder images
-                this.load.image('ice','https://via.placeholder.com/50/00ffff/ffffff?text=Ice');
-                this.load.image('cup_bar','https://via.placeholder.com/150x20/964B00/ffffff?text=Bar');
+                this.load.image('ice','https://via.placeholder.com/50/00ffff/ffffff?text=Ice'); // cyan ice
             },
             create: function(){
                 const w=this.scale.width, h=this.scale.height;
 
+                // Background
+                this.cameras.main.setBackgroundColor('#aeefff');
+
                 // Score
                 this.score=0;
-                this.scoreText=this.add.text(10,10,'Score: 0',{font:'24px Arial',fill:'#fff'});
+                this.scoreText=this.add.text(10,10,'Score: 0',{font:'24px Arial',fill:'#000'});
 
                 // Ice group
                 this.iceCubes=this.physics.add.group();
@@ -47,31 +49,32 @@ document.addEventListener('click', function initGame(){
                     delay:700,
                     loop:true,
                     callback:()=>{
-                        const ice=this.iceCubes.create(Phaser.Math.Between(50,w-50), -20, 'ice');
-                        ice.setScale(0.5).setBounce(0.5).setCollideWorldBounds(true);
+                        const ice=this.iceCubes.create(Phaser.Math.Between(w*0.35,w*0.65), -20, 'ice');
+                        ice.setScale(0.4).setBounce(0.3).setCollideWorldBounds(true);
                         ice.melt=100;
                     }
                 });
 
-                // Cup bars
+                // === Jail-cell cup ===
                 this.cupBars=[];
-                const cupW=w*0.25, cupH=h*0.08;
+                const cupW=w*0.3, cupH=h*0.15;
                 const cupX=w/2-cupW/2, cupY=h-cupH-50;
 
-                // Horizontal bars
-                for(let i=0;i<3;i++){
-                    const bar=this.physics.add.staticImage(cupX+cupW/2, cupY+i*(cupH/3),'cup_bar');
-                    bar.setScale(cupW/50,0.2).refreshBody().setTint(0xaaaaaa);
-                    this.cupBars.push(bar);
-                }
-                // Vertical bars
-                for(let i=0;i<2;i++){
-                    const bar=this.physics.add.staticImage(cupX+i*cupW, cupY+cupH/2, 'cup_bar');
-                    bar.setScale(0.08,cupH/20).refreshBody().setTint(0xaaaaaa);
+                // Bottom horizontal bar
+                const bottom=this.add.rectangle(cupX+cupW/2, cupY+cupH, cupW, 10, 0x964B00);
+                this.physics.add.existing(bottom,true);
+                this.cupBars.push(bottom);
+
+                // Vertical bars (like jail cell)
+                const numBars=5;
+                for(let i=0;i<=numBars;i++){
+                    const x=cupX + i*(cupW/numBars);
+                    const bar=this.add.rectangle(x, cupY+cupH/2, 10, cupH, 0x964B00);
+                    this.physics.add.existing(bar,true);
                     this.cupBars.push(bar);
                 }
 
-                // Lasso
+                // Lasso graphics
                 this.lassoLine=this.add.graphics();
                 this.grabbed=null;
 
@@ -107,10 +110,12 @@ document.addEventListener('click', function initGame(){
                 // Ice melting & score
                 this.iceCubes.children.iterate(ice=>{
                     if(!ice) return;
-                    const overCup=this.cupBars.some(bar=>Phaser.Geom.Intersects.RectangleToRectangle(ice.getBounds(), bar.getBounds()));
+                    const overCup=this.cupBars.some(bar=>{
+                        return Phaser.Geom.Intersects.RectangleToRectangle(ice.getBounds(), bar.getBounds());
+                    });
                     if(overCup){
                         ice.melt-=0.5;
-                        ice.setScale(0.5*(ice.melt/100));
+                        ice.setScale(0.4*(ice.melt/100));
                         ice.setAlpha(ice.melt/100);
                         if(ice.melt<=0){
                             ice.destroy();
@@ -124,7 +129,6 @@ document.addEventListener('click', function initGame(){
     };
 
     new Phaser.Game(config);
-
     document.removeEventListener('click', initGame);
 });
 </script>
