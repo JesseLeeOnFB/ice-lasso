@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <title>Pig Catcher</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <style>
-body { margin:0; background: #ddd; }
+body { margin:0; background:#ddd; }
 canvas { display:block; margin:0 auto; }
 </style>
 </head>
@@ -23,30 +23,28 @@ const config = {
   type: Phaser.CANVAS,
   width: window.innerWidth,
   height: window.innerHeight,
-  physics: {
-    default: 'arcade',
-    arcade: { gravity: { y: 200 }, debug: false }
-  },
+  physics: { default: 'arcade', arcade: { gravity: { y: 100 }, debug: false } },
   scene: { preload, create, update }
 };
 
 new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bg', 'assets/IMG_2835.jpeg'); // desert
-  this.load.image('box', 'assets/IMG_2837.jpeg'); // cup
-  this.load.image('pig', 'assets/IMG_2836.jpeg'); // pig
+  this.load.image('bg', 'assets/IMG_2835.jpeg');    // desert background
+  this.load.image('box', 'assets/IMG_2837.jpeg');   // cup/box
+  this.load.image('pig', 'assets/IMG_2836.jpeg');   // pig
 }
 
 function create() {
   const w = this.scale.width;
   const h = this.scale.height;
 
-  this.add.image(w/2,h/2,'bg').setDisplaySize(w,h);
+  // Background
+  this.add.image(w/2, h/2, 'bg').setDisplaySize(w,h);
 
   // Start screen
-  const title = this.add.text(w/2,h/2-80,'PIG CATCHER',{ font:'48px Arial', fill:'#000'}).setOrigin(0.5);
-  const tapText = this.add.text(w/2,h/2,'Tap to Play',{ font:'28px Arial', fill:'#000'}).setOrigin(0.5);
+  const title = this.add.text(w/2, h/2 - 80, 'PIG CATCHER', { font: '48px Arial', fill: '#000' }).setOrigin(0.5);
+  const tapText = this.add.text(w/2, h/2, 'Tap to Play', { font: '28px Arial', fill: '#000' }).setOrigin(0.5);
 
   this.input.once('pointerdown', () => {
     title.destroy();
@@ -60,30 +58,33 @@ function startGame() {
   const h = this.scale.height;
   score = 0; misses = 0;
 
-  scoreText = this.add.text(20,20,'Score: 0',{ font:'24px Arial', fill:'#000'});
-  highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#000'});
-  missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#aa0000'});
+  // Score display
+  scoreText = this.add.text(20,20,'Score: 0',{ font:'24px Arial', fill:'#000' });
+  highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#000' });
+  missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#aa0000' });
 
-  // Cup (static)
-  box = this.physics.add.staticImage(w/2, h-140, 'box').setScale(1.5).refreshBody();
+  // Cup/Box
+  box = this.physics.add.staticImage(w/2, h-140, 'box').setScale(2).refreshBody();
 
+  // Pigs group
   pigs = this.physics.add.group();
 
+  // Spawn pigs
   spawnTimer = this.time.addEvent({
     delay: 1000,
     loop: true,
     callback: () => spawnPig.call(this)
   });
 
-  // Overlap detection
+  // Catch detection
   this.physics.add.overlap(pigs, box, catchPig, null, this);
 }
 
 function spawnPig() {
-  const w = this.scale.width;
-  const x = Phaser.Math.Between(box.x - box.displayWidth/2 + 20, box.x + box.displayWidth/2 - 20);
-  const pig = pigs.create(x, -50, 'pig').setScale(0.1);
+  const boxWidth = box.displayWidth;
+  const x = Phaser.Math.Between(box.x - boxWidth/2 + 20, box.x + boxWidth/2 - 20);
 
+  const pig = pigs.create(x, -50, 'pig').setScale(0.1);
   pig.setInteractive();
   pig.on('pointerdown', function(pointer){
     this.body.setAllowGravity(false);
