@@ -19,6 +19,7 @@ let score = 0, misses = 0;
 let highScore = localStorage.getItem('pigHighScore') || 0;
 const MAX_MISSES = 15;
 let spawnTimer;
+let grabbedPig = null;
 
 const config = {
   type: Phaser.CANVAS,
@@ -31,7 +32,7 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bg', 'assets/IMG_2835.jpeg');    // desert background
+  this.load.image('bg', 'assets/IMG_2835.jpeg');    // desert
   this.load.image('box', 'assets/IMG_2837.jpeg');   // cup / box
   this.load.image('pig', 'assets/IMG_2836.jpeg');   // pig falling object
 }
@@ -67,12 +68,13 @@ function startGame() {
   highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#000' });
   missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#aa0000' });
 
-  // Cup / box
+  // Cup / box - static physics object
   box = this.physics.add.staticImage(w/2, h - 140, 'box').setScale(1.5).refreshBody();
 
-  // Pigs group
+  // Group for pigs
   pigs = this.physics.add.group();
 
+  // Spawn timer
   spawnTimer = this.time.addEvent({
     delay: 1000,
     loop: true,
@@ -83,27 +85,19 @@ function startGame() {
   this.physics.add.overlap(pigs, box, catchPig, null, this);
 
   // Enable dragging pigs
-  this.input.on('gameobjectdown', (pointer, gameObject) => {
-    if (gameObject.texture.key === 'pig') {
-      gameObject.setData('dragging', true);
-      gameObject.body.setAllowGravity(false);
-    }
+  this.input.setDraggable(pigs.getChildren());
+
+  this.input.on('dragstart', (pointer, gameObject) => {
+    gameObject.body.setAllowGravity(false);
   });
 
-  this.input.on('gameobjectup', (pointer, gameObject) => {
-    if (gameObject.texture.key === 'pig') {
-      gameObject.setData('dragging', false);
-      gameObject.body.setAllowGravity(true);
-    }
+  this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+    gameObject.x = dragX;
+    gameObject.y = dragY;
   });
 
-  this.input.on('pointermove', pointer => {
-    pigs.getChildren().forEach(pig => {
-      if (pig.getData('dragging')) {
-        pig.x = pointer.x;
-        pig.y = pointer.y;
-      }
-    });
+  this.input.on('dragend', (pointer, gameObject) => {
+    gameObject.body.setAllowGravity(true);
   });
 }
 
@@ -111,13 +105,11 @@ function spawnPig() {
   const w = this.scale.width;
   const h = this.scale.height;
 
-  // Spawn within width of cup
   const boxWidth = box.displayWidth;
   const x = Phaser.Math.Between(box.x - boxWidth/2 + 20, box.x + boxWidth/2 - 20);
 
   const pig = pigs.create(x, -50, 'pig').setScale(0.1); // small pigs
-  pig.body.setCollideWorldBounds(true);
-  pig.body.setBounce(0);
+  pig.body.setCollideWorldBounds(false); // so pigs fall off screen
 }
 
 function catchPig(pig, box) {
