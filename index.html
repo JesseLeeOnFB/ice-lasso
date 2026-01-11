@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -5,11 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
   <style>
-    body { margin: 0; background: #222; }
-    canvas { display: block; margin: 0 auto; }
+    body {
+      margin: 0;
+      background: linear-gradient(to bottom, #a0e0ff, #ffffff); /* icy gradient */
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+    }
   </style>
 </head>
 <body>
-  <script src="game.js"></script>
+  <!-- Cache-busting ensures the latest game.js is loaded -->
+  <script src="game.js?v=999"></script>
 </body>
 </html>
