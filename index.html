@@ -34,7 +34,7 @@ new Phaser.Game(config);
 
 function preload() {
   this.load.image('bg','assets/IMG_2835.jpeg');    // background
-  this.load.image('cup','assets/IMG_2837.jpeg');   // cup/box
+  this.load.image('cup','assets/IMG_2837.png');    // cup (transparent)
   this.load.image('pig','assets/IMG_2836.jpeg');   // pig
 }
 
@@ -68,9 +68,18 @@ function create() {
 
 function spawnPig() {
   const w = this.scale.width;
-  const pig = this.add.image(Phaser.Math.Between(50, w-50), -50, 'pig');
-  pig.setScale(0.1);
-  pigs.push(pig);
+  let pigsPerSpawn = 1;
+
+  // Increase number of pigs dropping as score increases
+  if(score >= 50) pigsPerSpawn = 4;
+  else if(score >= 30) pigsPerSpawn = 3;
+  else if(score >= 10) pigsPerSpawn = 2;
+
+  for(let i=0; i<pigsPerSpawn; i++){
+    const pig = this.add.image(Phaser.Math.Between(50, w-50), -50, 'pig');
+    pig.setScale(0.2); // bigger pigs
+    pigs.push(pig);
+  }
 }
 
 function update() {
@@ -97,10 +106,20 @@ function update() {
       pigs.splice(i,1);
       score++;
       scoreText.setText('Score: '+score);
+
+      // High score check and pulse animation
       if(score > highScore){
         highScore = score;
         localStorage.setItem('pigHighScore',highScore);
         highText.setText('High: '+highScore);
+
+        // Pulse effect
+        this.tweens.add({
+          targets: highText,
+          scale: 1.5,
+          duration: 200,
+          yoyo: true
+        });
       }
       continue;
     }
@@ -152,7 +171,7 @@ function gameOver(){
       .setInteractive()
       .once('pointerdown',()=>resetGame.call(this));
 
-  cup.setDepth(2); // ensure cup is always on top
+  cup.setDepth(2); // cup always on top
 }
 </script>
 
