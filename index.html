@@ -34,7 +34,7 @@ document.addEventListener('click', function initGame(){
                 this.load.image('ice','https://upload.wikimedia.org/wikipedia/commons/3/3b/Ice_cube.png');
                 this.load.image('cup','https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Empty_glass_cup.png/600px-Empty_glass_cup.png');
 
-                // Noticeable online sound
+                // Catch sound
                 this.load.audio('catch','https://freesound.org/data/previews/103/103047_861714-lq.mp3');
             },
             create: function(){
@@ -49,27 +49,30 @@ document.addEventListener('click', function initGame(){
                 // Sound
                 this.catchSound = this.sound.add('catch');
 
+                // Cup visual
+                const cupX=w/2, cupY=h-220; 
+                this.cupImg=this.add.image(cupX,cupY,'cup').setScale(4); // big but visible
+
+                // Collider at bottom of cup
+                this.cupCollider=this.physics.add.staticGroup();
+                this.cupCollider.create(cupX, cupY + this.cupImg.displayHeight/2 - 40, null)
+                    .setDisplaySize(this.cupImg.displayWidth*0.6, 40)
+                    .refreshBody();
+
                 // Ice group
                 this.iceCubes=this.physics.add.group();
                 this.time.addEvent({
                     delay:900,
                     loop:true,
                     callback:()=>{
-                        const ice=this.iceCubes.create(Phaser.Math.Between(w*0.35,w*0.65), -20, 'ice');
-                        ice.setScale(0.4).setBounce(0.3).setCollideWorldBounds(true);
-                        ice.spawnTime=this.time.now; // for fast-catch bonus
+                        // Spawn ice inside cup's horizontal range
+                        const minX = cupX - this.cupImg.displayWidth*0.25;
+                        const maxX = cupX + this.cupImg.displayWidth*0.25;
+                        const ice=this.iceCubes.create(Phaser.Math.Between(minX,maxX), -20, 'ice');
+                        ice.setScale(0.5).setBounce(0.3).setCollideWorldBounds(true);
+                        ice.spawnTime=this.time.now;
                     }
                 });
-
-                // Cup visual
-                const cupX=w/2, cupY=h-180;
-                this.cupImg=this.add.image(cupX,cupY,'cup').setScale(4.9); // 7x bigger
-
-                // Collider at bottom of cup
-                this.cupCollider=this.physics.add.staticGroup();
-                this.cupCollider.create(cupX, cupY + this.cupImg.displayHeight/2 - 50, null)
-                    .setDisplaySize(this.cupImg.displayWidth*0.6, 40)
-                    .refreshBody();
 
                 // Lasso
                 this.lassoLine=this.add.graphics();
@@ -79,7 +82,7 @@ document.addEventListener('click', function initGame(){
                 this.input.on('pointerdown', pointer=>{
                     this.iceCubes.children.iterate(ice=>{
                         if(!ice) return;
-                        if(Phaser.Math.Distance.Between(pointer.x,pointer.y,ice.x,ice.y)<50){
+                        if(Phaser.Math.Distance.Between(pointer.x,pointer.y,ice.x,ice.y)<60){
                             this.grabbed=ice;
                             ice.body.allowGravity=false;
                         }
@@ -98,7 +101,7 @@ document.addEventListener('click', function initGame(){
                     this.score+=points;
                     this.scoreText.setText('Score: '+this.score);
 
-                    // Play sound (works after user click)
+                    // Play sound after user first tap
                     this.catchSound.play();
                 });
             },
