@@ -1,58 +1,39 @@
-// Ice Lasso — mobile-friendly, dynamic cup, 8-bit music & SFX
+// Ice Lasso — mobile-friendly fixes, 8-bit music & SFX
 const config = {
     type: Phaser.AUTO,
     width: window.innerWidth * 0.95,
     height: window.innerHeight * 0.95,
-    physics: {
-        default: 'arcade',
-        arcade: { gravity: { y: 350 }, debug: false }
-    },
+    physics: { default: 'arcade', arcade: { gravity: { y: 350 }, debug: false } },
     scene: { preload, create, update },
     parent: 'body'
 };
 
 const game = new Phaser.Game(config);
 
-let iceCubes;
-let cupBars = [];
-let grabbed = null;
-let score = 0;
-let scoreText;
-let lassoLine;
-let bgMusic;
-let catchSound;
-
+let iceCubes, cupBars = [], grabbed = null, score = 0, scoreText, lassoLine;
+let bgMusic, catchSound;
 let cupWidth, cupHeight, cupX, cupY;
+let firstTap = false;
 
 function preload() {
-    // Graphics
     this.load.image('ice', 'https://labs.phaser.io/assets/sprites/ice.png');
     this.load.image('cup_bar', 'https://labs.phaser.io/assets/sprites/block.png');
-
-    // 8-bit background music (loop)
-    this.load.audio('bgMusic', 'https://freesound.org/data/previews/522/522433_8460081-lq.mp3'); // Replace with your hosted 8-bit loop
-
-    // Ice catch sound effect
-    this.load.audio('catch', 'https://freesound.org/data/previews/66/66717_931655-lq.mp3'); // 8-bit pop/catch sound
+    this.load.audio('bgMusic', 'https://freesound.org/data/previews/522/522433_8460081-lq.mp3');
+    this.load.audio('catch', 'https://freesound.org/data/previews/66/66717_931655-lq.mp3');
 }
 
 function create() {
-    const width = this.scale.width;
-    const height = this.scale.height;
+    const width = this.scale.width, height = this.scale.height;
 
-    // Dynamic cup
     cupWidth = Math.round(width * 0.25);
     cupHeight = Math.round(height * 0.08);
     cupX = width / 2 - cupWidth / 2;
     cupY = height - cupHeight - 50;
 
-    // Background
     this.cameras.main.setBackgroundColor('#5dade2');
 
-    // Ice cubes group
     iceCubes = this.physics.add.group();
 
-    // Spawn ice dynamically
     this.time.addEvent({
         delay: 700,
         callback: () => {
@@ -70,7 +51,6 @@ function create() {
         loop: true
     });
 
-    // Create cup bars dynamically
     cupBars = [];
     const horizontalBarCount = 3;
     const horizontalSpacing = cupHeight / 3;
@@ -81,40 +61,29 @@ function create() {
         bar.setTint(0xaaaaaa);
         cupBars.push(bar);
     }
-
-    // Vertical bars (sides)
     for (let i = 0; i < 2; i++) {
-        const bar = this.physics.add.staticImage(
-            cupX + i * cupWidth,
-            cupY + cupHeight / 2,
-            'cup_bar'
-        );
+        const bar = this.physics.add.staticImage(cupX + i * cupWidth, cupY + cupHeight / 2, 'cup_bar');
         bar.setScale(0.08, cupHeight / 20).refreshBody();
         bar.setTint(0xaaaaaa);
         cupBars.push(bar);
     }
 
-    // Score counter
     scoreText = this.add.text(10, 10, 'Score: 0', {
-        font: `${Math.round(width / 25)}px Arial`,
-        fill: '#fff',
-        fontStyle: 'bold'
+        font: `${Math.round(width / 25)}px Arial`, fill: '#fff', fontStyle: 'bold'
     }).setScrollFactor(0).setDepth(10);
 
-    // Lasso line
     lassoLine = this.add.graphics();
 
-    // Load sounds
     bgMusic = this.sound.add('bgMusic', { volume: 0.3, loop: true });
     catchSound = this.sound.add('catch', { volume: 0.5 });
 
-    // Mobile requires interaction to start audio
-    this.input.once('pointerdown', () => {
-        bgMusic.play();
-    });
-
-    // Input for grabbing ice cubes
+    // Handle first tap for mobile audio and enable ice grabbing
     this.input.on('pointerdown', pointer => {
+        if (!firstTap) {
+            bgMusic.play();
+            firstTap = true;
+        }
+
         iceCubes.children.iterate(ice => {
             if (!ice) return;
             if (Phaser.Math.Distance.Between(pointer.x, pointer.y, ice.x, ice.y) < 40) {
@@ -131,10 +100,7 @@ function create() {
         }
     });
 
-    // Collide ice with cup bars
-    cupBars.forEach(bar => {
-        this.physics.add.collider(iceCubes, bar);
-    });
+    cupBars.forEach(bar => this.physics.add.collider(iceCubes, bar));
 }
 
 function update() {
@@ -144,7 +110,6 @@ function update() {
         const pointer = this.input.activePointer;
         grabbed.setPosition(pointer.x, pointer.y);
 
-        // Draw lasso
         lassoLine.lineStyle(4, 0x00ffff, 1);
         lassoLine.beginPath();
         lassoLine.moveTo(pointer.x, pointer.y);
@@ -152,7 +117,6 @@ function update() {
         lassoLine.strokePath();
     }
 
-    // Ice melting mechanic
     iceCubes.children.iterate(ice => {
         if (!ice) return;
         const overCup = cupBars.some(bar => Phaser.Geom.Intersects.RectangleToRectangle(ice.getBounds(), bar.getBounds()));
@@ -164,7 +128,6 @@ function update() {
                 ice.destroy();
                 score++;
                 scoreText.setText('Score: ' + score);
-                // Play 8-bit catch sound
                 catchSound.play();
             }
         }
