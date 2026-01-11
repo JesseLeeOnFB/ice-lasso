@@ -21,6 +21,7 @@ let highScore = localStorage.getItem('pigHighScore') || 0;
 const MAX_MISSES = 15;
 let spawnTimer;
 let gameOverOverlay, restartText;
+let pigFallSpeed = 3;
 
 const config = {
   type: Phaser.CANVAS,
@@ -49,7 +50,7 @@ function create() {
   highText = this.add.text(20,50,'High: '+highScore,{font:'20px Arial',fill:'#000'});
   missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#aa0000'});
 
-  // Cup (purely visual, no physics)
+  // Cup (purely visual)
   cup = this.add.image(w/2,h-150,'cup').setDisplaySize(150,150).setOrigin(0.5,1);
 
   // Move cup with pointer
@@ -75,11 +76,17 @@ function spawnPig() {
 function update() {
   const h = this.scale.height;
 
+  // Adjust pig fall speed based on score
+  if(score >= 50) pigFallSpeed = 9;
+  else if(score >= 30) pigFallSpeed = 7;
+  else if(score >= 10) pigFallSpeed = 5;
+  else pigFallSpeed = 3;
+
   for (let i = pigs.length - 1; i >= 0; i--) {
     const pig = pigs[i];
-    pig.y += 3; // falling speed
+    pig.y += pigFallSpeed;
 
-    // Check collision with cup (manual bounding box)
+    // Manual collision with cup
     if (
       pig.y + pig.displayHeight/2 >= cup.y - cup.displayHeight &&
       pig.y - pig.displayHeight/2 <= cup.y &&
@@ -98,7 +105,7 @@ function update() {
       continue;
     }
 
-    // Check if pig missed (fell past screen)
+    // Missed pig
     if (pig.y - pig.displayHeight/2 > h) {
       pig.destroy();
       pigs.splice(i,1);
@@ -110,18 +117,22 @@ function update() {
 }
 
 function resetGame() {
-  if(gameOverOverlay) gameOverOverlay.destroy();
-  if(restartText) restartText.destroy();
+  // Remove overlay and restart text
+  if(gameOverOverlay) { gameOverOverlay.destroy(); gameOverOverlay = null; }
+  if(restartText) { restartText.destroy(); restartText = null; }
 
   score = 0;
   misses = 0;
+  pigFallSpeed = 3;
+
   scoreText.setText('Score: 0');
   missText.setText('Misses: 0 / '+MAX_MISSES);
 
+  // Destroy all existing pigs
   pigs.forEach(p => p.destroy());
   pigs = [];
 
-  // restart spawn
+  // Restart pig spawn
   spawnTimer = this.time.addEvent({
     delay: 1200,
     loop: true,
@@ -141,7 +152,7 @@ function gameOver(){
       .setInteractive()
       .once('pointerdown',()=>resetGame.call(this));
 
-  cup.setDepth(2); // cup always on top
+  cup.setDepth(2); // ensure cup is always on top
 }
 </script>
 
