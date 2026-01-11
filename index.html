@@ -31,9 +31,10 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bg','assets/IMG_2835.jpeg'); // Background
-  this.load.image('box','assets/IMG_2837.jpeg'); // Cup
-  this.load.image('pig','assets/IMG_2836.jpeg'); // Pig
+  // Use your assets folder ONLY
+  this.load.image('bg','assets/IMG_2835.jpeg');    // background
+  this.load.image('box','assets/IMG_2837.jpeg');   // cup/box
+  this.load.image('pig','assets/IMG_2836.jpeg');   // pig
 }
 
 function create() {
