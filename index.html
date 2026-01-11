@@ -21,7 +21,7 @@ let highScore = localStorage.getItem('pigHighScore') || 0;
 const MAX_MISSES = 15;
 let spawnTimer;
 let gameOverOverlay, restartText;
-let pigFallSpeed = 3;
+let pigFallSpeed = 4;
 
 const config = {
   type: Phaser.CANVAS,
@@ -50,7 +50,7 @@ function create() {
   highText = this.add.text(20,50,'High: '+highScore,{font:'20px Arial',fill:'#000'});
   missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#aa0000'});
 
-  // Cup (purely visual)
+  // Cup (smaller, always visible)
   cup = this.add.image(w/2,h-150,'cup').setDisplaySize(150,150).setOrigin(0.5,1);
 
   // Move cup with pointer
@@ -70,13 +70,14 @@ function spawnPig() {
   const w = this.scale.width;
   let pigsPerSpawn = 1;
 
-  // Increase number of pigs dropping as score increases
-  if(score >= 50) pigsPerSpawn = 4;
-  else if(score >= 30) pigsPerSpawn = 3;
+  // Multiple pigs for rain effect
+  if(score >= 50) pigsPerSpawn = 6;
+  else if(score >= 30) pigsPerSpawn = 4;
   else if(score >= 10) pigsPerSpawn = 2;
 
   for(let i=0; i<pigsPerSpawn; i++){
-    const pig = this.add.image(Phaser.Math.Between(50, w-50), -50, 'pig');
+    const xPos = Phaser.Math.Between(50, w-50);
+    const pig = this.add.image(xPos, -50, 'pig');
     pig.setScale(0.2); // bigger pigs
     pigs.push(pig);
   }
@@ -85,17 +86,17 @@ function spawnPig() {
 function update() {
   const h = this.scale.height;
 
-  // Adjust pig fall speed based on score
-  if(score >= 50) pigFallSpeed = 9;
-  else if(score >= 30) pigFallSpeed = 7;
-  else if(score >= 10) pigFallSpeed = 5;
-  else pigFallSpeed = 3;
+  // Increase fall speed with score
+  if(score >= 50) pigFallSpeed = 12;
+  else if(score >= 30) pigFallSpeed = 9;
+  else if(score >= 10) pigFallSpeed = 6;
+  else pigFallSpeed = 4;
 
   for (let i = pigs.length - 1; i >= 0; i--) {
     const pig = pigs[i];
     pig.y += pigFallSpeed;
 
-    // Manual collision with cup
+    // Collision with cup
     if (
       pig.y + pig.displayHeight/2 >= cup.y - cup.displayHeight &&
       pig.y - pig.displayHeight/2 <= cup.y &&
@@ -107,13 +108,11 @@ function update() {
       score++;
       scoreText.setText('Score: '+score);
 
-      // High score check and pulse animation
+      // High score pulse
       if(score > highScore){
         highScore = score;
         localStorage.setItem('pigHighScore',highScore);
         highText.setText('High: '+highScore);
-
-        // Pulse effect
         this.tweens.add({
           targets: highText,
           scale: 1.5,
@@ -124,7 +123,7 @@ function update() {
       continue;
     }
 
-    // Missed pig
+    // Missed pigs
     if (pig.y - pig.displayHeight/2 > h) {
       pig.destroy();
       pigs.splice(i,1);
@@ -136,22 +135,19 @@ function update() {
 }
 
 function resetGame() {
-  // Remove overlay and restart text
   if(gameOverOverlay) { gameOverOverlay.destroy(); gameOverOverlay = null; }
   if(restartText) { restartText.destroy(); restartText = null; }
 
   score = 0;
   misses = 0;
-  pigFallSpeed = 3;
+  pigFallSpeed = 4;
 
   scoreText.setText('Score: 0');
   missText.setText('Misses: 0 / '+MAX_MISSES);
 
-  // Destroy all existing pigs
   pigs.forEach(p => p.destroy());
   pigs = [];
 
-  // Restart pig spawn
   spawnTimer = this.time.addEvent({
     delay: 1200,
     loop: true,
@@ -171,7 +167,7 @@ function gameOver(){
       .setInteractive()
       .once('pointerdown',()=>resetGame.call(this));
 
-  cup.setDepth(2); // cup always on top
+  cup.setDepth(2);
 }
 </script>
 
