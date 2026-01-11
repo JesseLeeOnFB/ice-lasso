@@ -28,7 +28,7 @@ const config = {
   height: window.innerHeight,
   physics: {
     default: 'arcade',
-    arcade: { gravity: { y: 260 }, debug: false }
+    arcade: { gravity: { y: 250 }, debug: false }
   },
   scene: { preload, create, update }
 };
@@ -36,15 +36,20 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
-  this.load.image('ice','https://upload.wikimedia.org/wikipedia/commons/3/3b/Ice_cube.png');
+  // Fun, safe web-hosted images
+  this.load.image('bg','https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1280&q=80'); // Sky background
+  this.load.image('cup','https://upload.wikimedia.org/wikipedia/commons/3/32/Cartoon_jail_cell.png'); // Cartoon jail cell
+  this.load.image('ice','https://upload.wikimedia.org/wikipedia/commons/3/3b/Ice_cube.png'); // Cartoon ice cube
 }
 
 function create() {
   const w = this.scale.width;
   const h = this.scale.height;
 
-  this.cameras.main.setBackgroundColor('#7ecbff');
+  // Background
+  this.add.image(w/2, h/2, 'bg').setDepth(-1).setDisplaySize(w, h);
 
+  // Title screen
   const title = this.add.text(w/2, h/2 - 80, 'ICE CAPTURE', {
     font: '48px Arial',
     fill: '#003366'
@@ -74,18 +79,17 @@ function startGame() {
   highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#000' });
   missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#aa0000' });
 
-  // CUP VISUAL (smaller + fair)
-  const cupGfx = this.add.graphics();
-  cupGfx.lineStyle(6, 0x222222);
-  cupGfx.strokeRoundedRect(w/2 - 140, h - 260, 280, 200, 20);
+  // Cup visual
+  const cup = this.add.image(w/2, h-120, 'cup').setScale(0.5);
+  cup.setOrigin(0.5,0); // top-centered
 
-  // CATCH ZONE (tight + skill-based)
+  // Catch zone (small and skill-based)
   catchZone = this.add.rectangle(
     w/2,
-    h - 110,
-    180,
-    40,
-    0x00ff00,
+    h - 60, // slightly above bottom
+    100, // width
+    30, // height
+    0xff0000,
     0
   );
   this.physics.add.existing(catchZone, true);
@@ -93,18 +97,20 @@ function startGame() {
   iceGroup = this.physics.add.group();
 
   spawnTimer = this.time.addEvent({
-    delay: 900,
+    delay: 1000,
     loop: true,
     callback: () => spawnIce.call(this)
   });
 
   rope = this.add.graphics();
 
+  // Grab input
   this.input.on('pointerdown', p => {
     iceGroup.children.iterate(ice => {
       if (!ice || !ice.active) return;
-      if (Phaser.Math.Distance.Between(p.x,p.y,ice.x,ice.y) < 55) {
+      if (Phaser.Math.Distance.Between(p.x,p.y,ice.x,ice.y) < 50) {
         grabbed = ice;
+        ice.grabbed = true;
         ice.body.setAllowGravity(false);
         ice.body.setVelocity(0);
       }
@@ -118,9 +124,9 @@ function startGame() {
     }
   });
 
-  // SCORING
+  // Scoring only if grabbed
   this.physics.add.overlap(iceGroup, catchZone, (zone, ice) => {
-    if (!ice.active) return;
+    if (!ice.active || !ice.grabbed) return;
 
     ice.disableBody(true, true);
     score++;
@@ -146,15 +152,14 @@ function startGame() {
 
 function spawnIce() {
   const w = this.scale.width;
-  const h = this.scale.height;
 
   const ice = iceGroup.create(
-    Phaser.Math.Between(w/2 - 220, w/2 + 220),
+    Phaser.Math.Between(w/2 - 260, w/2 + 260),
     -60,
     'ice'
   );
-  ice.setScale(0.45);
-  ice.setBounce(0);
+  ice.setScale(0.6); // slightly bigger ice
+  ice.grabbed = false;
 
   ice.body.checkWorldBounds = true;
   ice.body.onWorldBounds = true;
@@ -174,7 +179,7 @@ function spawnIce() {
 
 function showNewHighScore() {
   const w = this.scale.width;
-  const text = this.add.text(w/2, 150, 'NEW HIGH SCORE!', {
+  const text = this.add.text(w/2, 140, 'NEW HIGH SCORE!', {
     font: '32px Arial',
     fill: '#ffdd00'
   }).setOrigin(0.5);
