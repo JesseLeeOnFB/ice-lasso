@@ -30,9 +30,9 @@ document.addEventListener('click', function initGame(){
         scale:{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
         scene: {
             preload: function(){
-                // Load your local assets
+                // Load assets
                 this.load.image('ice','assets/IMG_2832.jpeg');    // Ice cube
-                this.load.image('cup','assets/IMG_2834.jpeg');    // New Jail-cell cup
+                this.load.image('cup','assets/IMG_2834.png');    // New cup image
             },
             create: function(){
                 const w=this.scale.width, h=this.scale.height;
@@ -47,7 +47,7 @@ document.addEventListener('click', function initGame(){
                 // Ice group
                 this.iceCubes=this.physics.add.group();
                 this.time.addEvent({
-                    delay:900, // slower spawn
+                    delay:900, // slightly slower spawn
                     loop:true,
                     callback:()=>{
                         const ice=this.iceCubes.create(Phaser.Math.Between(w*0.35,w*0.65), -20, 'ice');
@@ -56,10 +56,18 @@ document.addEventListener('click', function initGame(){
                     }
                 });
 
-                // Cup (jail-cell)
+                // Cup visual
                 const cupX=w/2, cupY=h-150;
-                this.cup=this.physics.add.staticImage(cupX, cupY, 'cup');
-                this.cup.setScale(0.5).refreshBody();  // adjust scale as needed
+                this.cup=this.add.image(cupX, cupY, 'cup');
+                this.cup.setScale(0.5);  // adjust size to fit screen
+
+                // Invisible bottom rectangle collider for cup
+                const cupWidth=200*this.cup.scaleX;  // adjust to image size
+                const cupHeight=20;
+                this.cupCollider=this.physics.add.staticGroup();
+                this.cupCollider.create(cupX, cupY + this.cup.displayHeight/2 - cupHeight/2, null)
+                    .setDisplaySize(cupWidth, cupHeight)
+                    .refreshBody();
 
                 // Lasso graphics
                 this.lassoLine=this.add.graphics();
@@ -79,8 +87,10 @@ document.addEventListener('click', function initGame(){
                     if(this.grabbed){ this.grabbed.body.allowGravity=true; this.grabbed=null; }
                 });
 
-                // Collider
-                this.physics.add.collider(this.iceCubes, this.cup);
+                // Collider with cup bottom
+                this.physics.add.collider(this.iceCubes, this.cupCollider, (ice)=>{
+                    // Do nothing on collision, melting handled in update
+                });
             },
             update: function(){
                 this.lassoLine.clear();
@@ -97,7 +107,7 @@ document.addEventListener('click', function initGame(){
                 // Ice melting & score
                 this.iceCubes.children.iterate(ice=>{
                     if(!ice) return;
-                    if(Phaser.Geom.Intersects.RectangleToRectangle(ice.getBounds(), this.cup.getBounds())){
+                    if(Phaser.Geom.Intersects.RectangleToRectangle(ice.getBounds(), this.cupCollider.getChildren()[0].getBounds())){
                         ice.melt-=0.5;
                         ice.setScale(0.3*(ice.melt/100));
                         ice.setAlpha(ice.melt/100);
