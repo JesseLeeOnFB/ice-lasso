@@ -18,6 +18,7 @@ let score = 0, misses = 0;
 let highScore = localStorage.getItem('pigHighScore') || 0;
 const MAX_MISSES = 15;
 let spawnTimer;
+let gameOverOverlay, restartText;
 
 const config = {
   type: Phaser.CANVAS,
@@ -27,12 +28,12 @@ const config = {
   scene: { preload, create, update }
 };
 
-let gameInstance = new Phaser.Game(config);
+new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bg','assets/IMG_2835.jpeg');
-  this.load.image('box','assets/IMG_2837.jpeg');
-  this.load.image('pig','assets/IMG_2836.jpeg');
+  this.load.image('bg','assets/IMG_2835.jpeg'); // Background
+  this.load.image('box','assets/IMG_2837.jpeg'); // Cup
+  this.load.image('pig','assets/IMG_2836.jpeg'); // Pig
 }
 
 function create() {
@@ -42,15 +43,15 @@ function create() {
   // Background
   this.add.image(w/2,h/2,'bg').setDisplaySize(w,h);
 
-  // Score texts
+  // Score UI
   scoreText = this.add.text(20,20,'Score: 0',{font:'24px Arial',fill:'#000'});
   highText = this.add.text(20,50,'High: '+highScore,{font:'20px Arial',fill:'#000'});
   missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#aa0000'});
 
-  // Cup / box
+  // Cup / box (static physics, never destroyed)
   box = this.physics.add.staticImage(w/2,h-140,'box').setScale(1.5).refreshBody();
 
-  // Make cup follow pointer horizontally
+  // Cup follows pointer horizontally
   this.input.on('pointermove', function (pointer) {
     box.x = Phaser.Math.Clamp(pointer.x, box.displayWidth/2, w - box.displayWidth/2);
     box.refreshBody();
@@ -72,7 +73,7 @@ function create() {
 
 function spawnPig() {
   const x = Phaser.Math.Between(50, this.scale.width - 50);
-  const pig = pigs.create(x,-50,'pig').setScale(0.1);
+  pigs.create(x,-50,'pig').setScale(0.1);
 }
 
 function catchPig(pig, box) {
@@ -99,13 +100,17 @@ function update() {
 }
 
 function resetGame() {
-  // Reset variables
+  // Remove overlay
+  if(gameOverOverlay) gameOverOverlay.destroy();
+  if(restartText) restartText.destroy();
+
+  // Reset score/misses
   score = 0;
   misses = 0;
   scoreText.setText('Score: 0');
   missText.setText('Misses: 0 / '+MAX_MISSES);
 
-  // Clear pigs
+  // Clear existing pigs
   pigs.clear(true,true);
 
   // Restart spawn timer
@@ -117,19 +122,21 @@ function resetGame() {
 }
 
 function gameOver(){
+  // Stop spawning pigs
   spawnTimer.remove(false);
-  pigs.clear(true,true);
+
   const w = this.scale.width;
   const h = this.scale.height;
 
-  // Semi-transparent overlay
-  this.add.rectangle(w/2,h/2,w,h,0x000000,0.6);
+  // Semi-transparent overlay (does NOT destroy cup)
+  gameOverOverlay = this.add.rectangle(w/2,h/2,w,h,0x000000,0.6);
 
   // Game over text
   this.add.text(w/2,h/2-40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
-  
+
   // Restart text
-  this.add.text(w/2,h/2+20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
+  restartText = this.add.text(w/2,h/2+20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
+      .setInteractive()
       .once('pointerdown',()=>resetGame.call(this));
 }
 </script>
