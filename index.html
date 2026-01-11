@@ -2,11 +2,11 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Ice Capture - Jail Edition</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Ice Capture - Desert Edition</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <style>
-body { margin:0; background: #444; }
+body { margin:0; background: #ddd; }
 canvas { display:block; margin:0 auto; }
 </style>
 </head>
@@ -14,10 +14,10 @@ canvas { display:block; margin:0 auto; }
 
 <script>
 let gameStarted = false;
-let iceGroup, catchZone, scoreText, highText, missText;
+let pigGroup, catchZone, scoreText, highText, missText;
 let score = 0;
 let misses = 0;
-let highScore = localStorage.getItem('iceHighScore') || 0;
+let highScore = localStorage.getItem('pigHighScore') || 0;
 let grabbed = null, rope, spawnTimer;
 
 const MAX_MISSES = 15;
@@ -28,7 +28,7 @@ const config = {
   height: window.innerHeight,
   physics: {
     default: 'arcade',
-    arcade: { gravity: { y: 200 }, debug: false }
+    arcade: { gravity: { y: 180 }, debug: false }
   },
   scene: { preload, create, update }
 };
@@ -36,9 +36,9 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bg','https://upload.wikimedia.org/wikipedia/commons/2/21/Gray_wall_texture.jpg'); // jail wall
-  this.load.image('cup','https://upload.wikimedia.org/wikipedia/commons/3/32/Cartoon_jail_cell.png'); // jail cup
-  this.load.image('ice','https://upload.wikimedia.org/wikipedia/commons/3/3b/Ice_cube.png'); // ice cube
+  this.load.image('bg','https://upload.wikimedia.org/wikipedia/commons/6/63/Sonoran_Desert_-_Arizona.jpg'); // desert background
+  this.load.image('cup','https://upload.wikimedia.org/wikipedia/commons/6/6d/Wooden_crate.png'); // box for cup
+  this.load.image('pig','https://upload.wikimedia.org/wikipedia/commons/3/3a/Pig_icon.png'); // pig image
 }
 
 function create() {
@@ -47,14 +47,12 @@ function create() {
 
   this.add.image(w/2, h/2, 'bg').setDisplaySize(w,h);
 
-  const title = this.add.text(w/2, h/2 - 80, 'ICE CAPTURE - JAIL', {
-    font: '48px Arial',
-    fill: '#ffff00'
+  const title = this.add.text(w/2, h/2 - 80, 'PIG CATCHER - DESERT', {
+    font: '48px Arial', fill: '#000'
   }).setOrigin(0.5);
 
   const tapText = this.add.text(w/2, h/2, 'Tap to Play', {
-    font: '28px Arial',
-    fill: '#ffff00'
+    font: '28px Arial', fill: '#000'
   }).setOrigin(0.5);
 
   this.input.once('pointerdown', () => {
@@ -72,43 +70,41 @@ function startGame() {
   const w = this.scale.width;
   const h = this.scale.height;
 
-  scoreText = this.add.text(20,20,'Score: 0',{ font:'24px Arial', fill:'#fff' });
-  highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#fff' });
-  missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#ff5555' });
+  scoreText = this.add.text(20,20,'Score: 0',{ font:'24px Arial', fill:'#000' });
+  highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#000' });
+  missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#aa0000' });
 
-  // Normal sized cup
-  const cup = this.add.image(w/2, h-150, 'cup').setScale(1.0);
+  const cup = this.add.image(w/2, h-150, 'cup').setScale(1.2);
   cup.setOrigin(0.5,0);
 
-  // Catch zone slightly smaller than cup
   catchZone = this.add.rectangle(
     w/2,
     h - 70,
-    100,
-    25,
+    120,
+    30,
     0xff0000,
     0
   );
   this.physics.add.existing(catchZone, true);
 
-  iceGroup = this.physics.add.group();
+  pigGroup = this.physics.add.group();
 
   spawnTimer = this.time.addEvent({
-    delay: 900,
+    delay: 1000,
     loop: true,
-    callback: () => spawnIce.call(this)
+    callback: () => spawnPig.call(this)
   });
 
   rope = this.add.graphics();
 
   this.input.on('pointerdown', p => {
-    iceGroup.children.iterate(ice => {
-      if (!ice || !ice.active) return;
-      if (Phaser.Math.Distance.Between(p.x,p.y,ice.x,ice.y) < 50) {
-        grabbed = ice;
-        ice.grabbed = true;
-        ice.body.setAllowGravity(false);
-        ice.body.setVelocity(0);
+    pigGroup.children.iterate(pig => {
+      if (!pig || !pig.active) return;
+      if (Phaser.Math.Distance.Between(p.x,p.y,pig.x,pig.y) < 50) {
+        grabbed = pig;
+        pig.grabbed = true;
+        pig.body.setAllowGravity(false);
+        pig.body.setVelocity(0);
       }
     });
   });
@@ -120,16 +116,16 @@ function startGame() {
     }
   });
 
-  this.physics.add.overlap(iceGroup, catchZone, (zone, ice) => {
-    if (!ice.active || !ice.grabbed) return;
+  this.physics.add.overlap(pigGroup, catchZone, (zone, pig) => {
+    if (!pig.active || !pig.grabbed) return;
 
-    ice.disableBody(true, true);
+    pig.disableBody(true, true);
     score++;
     scoreText.setText('Score: ' + score);
 
     if (score > highScore) {
       highScore = score;
-      localStorage.setItem('iceHighScore', highScore);
+      localStorage.setItem('pigHighScore', highScore);
       highText.setText('High: ' + highScore);
 
       const text = this.add.text(this.scale.width/2,150,'NEW HIGH SCORE!',{font:'32px Arial',fill:'#ffdd00'}).setOrigin(0.5);
@@ -141,28 +137,28 @@ function startGame() {
   });
 }
 
-function spawnIce() {
+function spawnPig() {
   const w = this.scale.width;
 
-  const ice = iceGroup.create(
+  const pig = pigGroup.create(
     Phaser.Math.Between(w/2 - 200, w/2 + 200),
     -60,
-    'ice'
+    'pig'
   );
-  ice.setScale(0.8);
-  ice.grabbed = false;
+  pig.setScale(1.0);
+  pig.grabbed = false;
 
-  ice.body.setCollideWorldBounds(true);
-  ice.body.onWorldBounds = true;
+  pig.body.setCollideWorldBounds(true);
+  pig.body.onWorldBounds = true;
 
-  ice.body.world.on('worldbounds', body => {
-    if (body.gameObject === ice && ice.active) {
-      ice.disableBody(true, true);
+  pig.body.world.on('worldbounds', body => {
+    if (body.gameObject === pig && pig.active) {
+      pig.disableBody(true, true);
       misses++;
       missText.setText('Misses: ' + misses + ' / ' + MAX_MISSES);
       if (misses >= MAX_MISSES) {
         spawnTimer.remove(false);
-        iceGroup.clear(true,true);
+        pigGroup.clear(true,true);
         this.add.rectangle(this.scale.width/2,this.scale.height/2,this.scale.width,this.scale.height,0x000000,0.6);
         this.add.text(this.scale.width/2,this.scale.height/2 - 40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
         this.add.text(this.scale.width/2,this.scale.height/2 + 20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
