@@ -50,13 +50,13 @@ document.addEventListener('click', function initGame(){
                 this.catchSound = this.sound.add('catch');
 
                 // Cup visual
-                const cupX=w/2, cupY=h-220; 
-                this.cupImg=this.add.image(cupX,cupY,'cup').setScale(4); // big but visible
+                const cupX=w/2, cupY=h-180;
+                this.cupImg=this.add.image(cupX,cupY,'cup').setScale(1.5); // 3x original ~1.5 scale
 
                 // Collider at bottom of cup
                 this.cupCollider=this.physics.add.staticGroup();
-                this.cupCollider.create(cupX, cupY + this.cupImg.displayHeight/2 - 40, null)
-                    .setDisplaySize(this.cupImg.displayWidth*0.6, 40)
+                this.cupCollider.create(cupX, cupY + this.cupImg.displayHeight/2 - 30, null)
+                    .setDisplaySize(this.cupImg.displayWidth*0.6, 30)
                     .refreshBody();
 
                 // Ice group
@@ -101,7 +101,7 @@ document.addEventListener('click', function initGame(){
                     this.score+=points;
                     this.scoreText.setText('Score: '+this.score);
 
-                    // Play sound after user first tap
+                    // Play sound after first user tap
                     this.catchSound.play();
                 });
             },
