@@ -26,13 +26,13 @@ document.addEventListener('click', function initGame(){
         type: Phaser.CANVAS,
         width: window.innerWidth*0.95,
         height: window.innerHeight*0.95,
-        physics:{ default:'arcade', arcade:{ gravity:{y:180}, debug:false } },
+        physics:{ default:'arcade', arcade:{ gravity:{y:120}, debug:false } },
         scale:{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
         scene: {
             preload: function(){
                 // Load your local assets
-                this.load.image('ice','assets/IMG_2832.jpeg');
-                this.load.image('cup','assets/IMG_2833.jpeg');
+                this.load.image('ice','assets/IMG_2832.jpeg');  // Ice cube
+                this.load.image('cup','assets/IMG_2833.jpeg');  // Jail-cell cup
             },
             create: function(){
                 const w=this.scale.width, h=this.scale.height;
@@ -47,7 +47,7 @@ document.addEventListener('click', function initGame(){
                 // Ice group
                 this.iceCubes=this.physics.add.group();
                 this.time.addEvent({
-                    delay:700,
+                    delay:900, // slightly slower spawn
                     loop:true,
                     callback:()=>{
                         const ice=this.iceCubes.create(Phaser.Math.Between(w*0.35,w*0.65), -20, 'ice');
