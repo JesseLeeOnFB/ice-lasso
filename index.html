@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pig Catcher - Desert Edition</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+<style>
+body { margin:0; background: #ddd; }
+canvas { display:block; margin:0 auto; }
+</style>
+</head>
+<body>
+
+<script>
+let gameStarted = false;
+let pigGroup, catchZone, scoreText, highText, missText;
+let score = 0;
+let misses = 0;
+let highScore = localStorage.getItem('pigHighScore') || 0;
+let grabbed = null, rope, spawnTimer;
+
+const MAX_MISSES = 15;
+
+const config = {
+  type: Phaser.CANVAS,
+  width: window.innerWidth,
+  height: window.innerHeight,
+  physics: {
+    default: 'arcade',
+    arcade: { gravity: { y: 200 }, debug: false }
+  },
+  scene: { preload, create, update }
+};
+
+new Phaser.Game(config);
+
+function preload() {
+  this.load.image('bg','https://gallery.yopriceville.com/var/resizes/Backgrounds/Desert_Sand_Background.jpg?m=1629825970'); // desert background  [oai_citation:3‡Gallery Yopriceville](https://gallery.yopriceville.com/Backgrounds/Desert_Sand_Background?utm_source=chatgpt.com)
+  this.load.image('box','https://www.clipartmax.com/png/middle/84-845633_box-wood-clipart-crate-clipart.png'); // box crate  [oai_citation:4‡ClipartMax.com](https://www.clipartmax.com/middle/m2i8G6d3H7A0G6m2_box-wood-clipart-crate-clipart/?utm_source=chatgpt.com)
+  this.load.image('pig','https://www.flyclipart.com/pig-cartoon-png-png-image-cartoon-pig-png-605852.png'); // pig PNG  [oai_citation:5‡FlyClipart](https://flyclipart.com/pig-cartoon-png-png-image-cartoon-pig-png-605852?utm_source=chatgpt.com)
+}
+
+function create() {
+  const w = this.scale.width;
+  const h = this.scale.height;
+
+  this.add.image(w/2, h/2, 'bg').setDisplaySize(w,h);
+
+  const title = this.add.text(w/2, h/2 - 80, 'PIG CATCHER', {
+    font: '48px Arial', fill: '#000'
+  }).setOrigin(0.5);
+
+  const tapText = this.add.text(w/2, h/2, 'Tap to Play', {
+    font: '28px Arial', fill: '#000'
+  }).setOrigin(0.5);
+
+  this.input.once('pointerdown', () => {
+    title.destroy();
+    tapText.destroy();
+    startGame.call(this);
+  });
+}
+
+function startGame() {
+  gameStarted = true;
+  score = 0;
+  misses = 0;
+
+  const w = this.scale.width;
+  const h = this.scale.height;
+
+  scoreText = this.add.text(20,20,'Score: 0',{ font:'24px Arial', fill:'#000' });
+  highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#000' });
+  missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#aa0000' });
+
+  const box = this.add.image(w/2, h-130, 'box').setScale(1.2);
+  box.setOrigin(0.5,0);
+
+  catchZone = this.add.rectangle(
+    w/2,
+    h - 60,
+    120,
+    30,
+    0xff0000,
+    0
+  );
+  this.physics.add.existing(catchZone, true);
+
+  pigGroup = this.physics.add.group();
+
+  spawnTimer = this.time.addEvent({
+    delay: 900,
+    loop: true,
+    callback: () => spawnPig.call(this)
+  });
+
+  rope = this.add.graphics();
+
+  this.input.on('pointerdown', p => {
+    pigGroup.children.iterate(pig => {
+      if (!pig || !pig.active) return;
+      if (Phaser.Math.Distance.Between(p.x,p.y,pig.x,pig.y) < 55) {
+        grabbed = pig;
+        pig.grabbed = true;
+        pig.body.setAllowGravity(false);
+        pig.body.setVelocity(0);
+      }
+    });
+  });
+
+  this.input.on('pointerup', () => {
+    if (grabbed) {
+      grabbed.body.setAllowGravity(true);
+      grabbed = null;
+    }
+  });
+
+  this.physics.add.overlap(pigGroup, catchZone, (zone, pig) => {
+    if (!pig.active || !pig.grabbed) return;
+
+    pig.disableBody(true, true);
+    score++;
+    scoreText.setText('Score: ' + score);
+
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('pigHighScore', highScore);
+      highText.setText('High: ' + highScore);
+
+      const text = this.add.text(w/2,150,'NEW HIGH SCORE!',{font:'32px Arial',fill:'#ffdd00'}).setOrigin(0.5);
+      this.tweens.add({
+        targets:text, y:100, alpha:0, duration:1200,
+        onComplete:()=>text.destroy()
+      });
+    }
+  });
+}
+
+function spawnPig() {
+  const w = this.scale.width;
+
+  const pig = pigGroup.create(
+    Phaser.Math.Between(w/2 - 180, w/2 + 180),
+    -60,
+    'pig'
+  );
+  pig.setScale(0.8);
+  pig.grabbed = false;
+
+  pig.body.setCollideWorldBounds(true);
+  pig.body.onWorldBounds = true;
+
+  pig.body.world.on('worldbounds', body => {
+    if (body.gameObject === pig && pig.active) {
+      pig.disableBody(true, true);
+      misses++;
+      missText.setText('Misses: ' + misses + ' / ' + MAX_MISSES);
+      if (misses >= MAX_MISSES) {
+        spawnTimer.remove(false);
+        pigGroup.clear(true,true);
+        this.add.rectangle(w/2,this.scale.height/2,w,this.scale.height,0x000000,0.6);
+        this.add.text(w/2,this.scale.height/2 - 40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
+        this.add.text(w/2,this.scale.height/2 + 20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
+          .once('pointerdown',()=>location.reload());
+      }
+    }
+  });
+}
+
+function update() {
+  if (!gameStarted) return;
+
+  rope.clear();
+  if (grabbed) {
+    grabbed.setPosition(this.input.x, this.input.y);
+    rope.lineStyle(3,0x00ffff);
+    rope.beginPath();
+    rope.moveTo(this.input.x,this.input.y);
+    rope.lineTo(grabbed.x,grabbed.y);
+    rope.strokePath();
+  }
+}
+</script>
+
+</body>
+</html>
