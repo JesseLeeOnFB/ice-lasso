@@ -30,9 +30,12 @@ document.addEventListener('click', function initGame(){
         scale:{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
         scene: {
             preload: function(){
-                // Large online images
-                this.load.image('ice','https://upload.wikimedia.org/wikipedia/commons/3/3b/Ice_cube.png'); // large ice cube
-                this.load.image('cup','https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Empty_glass_cup.png/600px-Empty_glass_cup.png'); // tall open cup
+                // Online images
+                this.load.image('ice','https://upload.wikimedia.org/wikipedia/commons/3/3b/Ice_cube.png');
+                this.load.image('cup','https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Empty_glass_cup.png/600px-Empty_glass_cup.png');
+
+                // Online sound
+                this.load.audio('catch','https://freesound.org/data/previews/82/82921_1022650-lq.mp3');
             },
             create: function(){
                 const w=this.scale.width, h=this.scale.height;
@@ -43,6 +46,9 @@ document.addEventListener('click', function initGame(){
                 this.score=0;
                 this.scoreText=this.add.text(10,10,'Score: 0',{font:'24px Arial',fill:'#000'});
 
+                // Sound
+                this.catchSound = this.sound.add('catch');
+
                 // Ice group
                 this.iceCubes=this.physics.add.group();
                 this.time.addEvent({
@@ -51,18 +57,18 @@ document.addEventListener('click', function initGame(){
                     callback:()=>{
                         const ice=this.iceCubes.create(Phaser.Math.Between(w*0.35,w*0.65), -20, 'ice');
                         ice.setScale(0.4).setBounce(0.3).setCollideWorldBounds(true);
-                        ice.spawnTime=this.time.now; // store spawn timestamp
+                        ice.spawnTime=this.time.now; // for fast-catch
                     }
                 });
 
                 // Cup visual
                 const cupX=w/2, cupY=h-180;
-                this.cupImg=this.add.image(cupX,cupY,'cup').setScale(0.7); // bigger cup
+                this.cupImg=this.add.image(cupX,cupY,'cup').setScale(2.8); // 4x bigger
 
                 // Collider at bottom of cup
                 this.cupCollider=this.physics.add.staticGroup();
-                this.cupCollider.create(cupX, cupY + this.cupImg.displayHeight/2 - 20, null)
-                    .setDisplaySize(this.cupImg.displayWidth*0.6, 20) // collider slightly narrower than cup
+                this.cupCollider.create(cupX, cupY + this.cupImg.displayHeight/2 - 40, null)
+                    .setDisplaySize(this.cupImg.displayWidth*0.6, 30) // bigger to match cup
                     .refreshBody();
 
                 // Lasso
@@ -91,6 +97,9 @@ document.addEventListener('click', function initGame(){
                     ice.destroy();
                     this.score+=points;
                     this.scoreText.setText('Score: '+this.score);
+
+                    // Play sound
+                    this.catchSound.play();
                 });
             },
             update: function(){
