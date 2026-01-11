@@ -1,4 +1,4 @@
-// Ice Lasso — mobile-friendly, dynamic cup and ice spawn
+// Ice Lasso — mobile-friendly, dynamic cup, 8-bit music & SFX
 const config = {
     type: Phaser.AUTO,
     width: window.innerWidth * 0.95,
@@ -19,16 +19,21 @@ let grabbed = null;
 let score = 0;
 let scoreText;
 let lassoLine;
+let bgMusic;
+let catchSound;
 
-// Dynamic variables
-let cupWidth;
-let cupHeight;
-let cupX;
-let cupY;
+let cupWidth, cupHeight, cupX, cupY;
 
 function preload() {
+    // Graphics
     this.load.image('ice', 'https://labs.phaser.io/assets/sprites/ice.png');
     this.load.image('cup_bar', 'https://labs.phaser.io/assets/sprites/block.png');
+
+    // 8-bit background music (loop)
+    this.load.audio('bgMusic', 'https://freesound.org/data/previews/522/522433_8460081-lq.mp3'); // Replace with your hosted 8-bit loop
+
+    // Ice catch sound effect
+    this.load.audio('catch', 'https://freesound.org/data/previews/66/66717_931655-lq.mp3'); // 8-bit pop/catch sound
 }
 
 function create() {
@@ -41,7 +46,7 @@ function create() {
     cupX = width / 2 - cupWidth / 2;
     cupY = height - cupHeight - 50;
 
-    // Background color
+    // Background
     this.cameras.main.setBackgroundColor('#5dade2');
 
     // Ice cubes group
@@ -67,10 +72,9 @@ function create() {
 
     // Create cup bars dynamically
     cupBars = [];
-
-    // Horizontal bars
     const horizontalBarCount = 3;
     const horizontalSpacing = cupHeight / 3;
+
     for (let i = 0; i < horizontalBarCount; i++) {
         const bar = this.physics.add.staticImage(cupX + cupWidth / 2, cupY + i * horizontalSpacing, 'cup_bar');
         bar.setScale(cupWidth / 50, 0.2).refreshBody();
@@ -99,6 +103,15 @@ function create() {
 
     // Lasso line
     lassoLine = this.add.graphics();
+
+    // Load sounds
+    bgMusic = this.sound.add('bgMusic', { volume: 0.3, loop: true });
+    catchSound = this.sound.add('catch', { volume: 0.5 });
+
+    // Mobile requires interaction to start audio
+    this.input.once('pointerdown', () => {
+        bgMusic.play();
+    });
 
     // Input for grabbing ice cubes
     this.input.on('pointerdown', pointer => {
@@ -151,6 +164,8 @@ function update() {
                 ice.destroy();
                 score++;
                 scoreText.setText('Score: ' + score);
+                // Play 8-bit catch sound
+                catchSound.play();
             }
         }
     });
