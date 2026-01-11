@@ -22,6 +22,8 @@ const MAX_MISSES = 15;
 let spawnTimer;
 let gameOverOverlay, restartText;
 let pigFallSpeed = 4;
+let gameStarted = false;
+let startScreen, startText;
 
 const config = {
   type: Phaser.CANVAS,
@@ -33,9 +35,9 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bg','assets/IMG_2835.jpeg');    // background
-  this.load.image('cup','assets/IMG_2837.jpeg');   // cup
-  this.load.image('pig','assets/IMG_2836.jpeg');   // pig
+  this.load.image('bg','assets/IMG_2835.jpeg');    
+  this.load.image('cup','assets/IMG_2837.jpeg');   
+  this.load.image('pig','assets/IMG_2836.jpeg');   
 }
 
 function create() {
@@ -45,10 +47,27 @@ function create() {
   // Background
   this.add.image(w/2,h/2,'bg').setDisplaySize(w,h);
 
+  // Start screen overlay
+  startScreen = this.add.rectangle(w/2,h/2,w,h,0x000000,0.6);
+  startText = this.add.text(w/2,h/2,'TAP TO PLAY',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
+
+  // Tap to start
+  this.input.once('pointerdown', ()=>{
+    startScreen.destroy();
+    startText.destroy();
+    gameStarted = true;
+    startGame.call(this);
+  });
+
   // UI
   scoreText = this.add.text(20,20,'Score: 0',{font:'24px Arial',fill:'#fff'});
   highText = this.add.text(20,50,'High: '+highScore,{font:'20px Arial',fill:'#fff'});
   missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#ff5555'});
+}
+
+function startGame() {
+  const w = this.scale.width;
+  const h = this.scale.height;
 
   // Cup (smaller, harder)
   cup = this.add.image(w/2,h-150,'cup').setDisplaySize(100,100).setOrigin(0.5,1);
@@ -84,9 +103,10 @@ function spawnPig() {
 }
 
 function update() {
+  if(!gameStarted) return; // wait for tap to play
+
   const h = this.scale.height;
 
-  // Increase fall speed with score
   if(score >= 50) pigFallSpeed = 12;
   else if(score >= 30) pigFallSpeed = 9;
   else if(score >= 10) pigFallSpeed = 6;
@@ -136,7 +156,6 @@ function update() {
 
 function resetGame() {
   if(gameOverOverlay) { 
-    // Fade out dark overlay for restart
     this.tweens.add({
       targets: gameOverOverlay,
       alpha: 0,
@@ -170,7 +189,6 @@ function gameOver(){
   const w = this.scale.width;
   const h = this.scale.height;
 
-  // Dark overlay stays on screen
   gameOverOverlay = this.add.rectangle(w/2,h/2,w,h,0x000000,0.5);
   this.add.text(w/2,h/2-40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
   restartText = this.add.text(w/2,h/2+20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
