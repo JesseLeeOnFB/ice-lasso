@@ -48,17 +48,16 @@ function create() {
   highText = this.add.text(20,50,'High: '+highScore,{font:'20px Arial',fill:'#000'});
   missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#aa0000'});
 
-  // Cup / box (static physics, always visible)
-  box = this.physics.add.staticImage(w/2,h-100,'box')
-          .setDisplaySize(150,150)   // exact size of cup
-          .setOrigin(0.5,1)          // bottom center
-          .refreshBody();
-  box.setDepth(2); // make sure cup is always visible
+  // Cup / box (static physics, immovable, always visible)
+  box = this.physics.add.sprite(w/2,h-100,'box');
+  box.setDisplaySize(150,150).setOrigin(0.5,1);
+  box.body.setImmovable(true);      // Prevents cup from being moved by physics
+  box.body.allowGravity = false;    // Cup unaffected by gravity
+  box.setDepth(2);                  // Always render above background
 
   // Cup follows pointer horizontally
   this.input.on('pointermove', function (pointer) {
     box.x = Phaser.Math.Clamp(pointer.x, box.displayWidth/2, w - box.displayWidth/2);
-    box.refreshBody();
   });
 
   // Pigs group
@@ -71,25 +70,23 @@ function create() {
     callback: ()=>spawnPig.call(this)
   });
 
-  // Catch detection
-  this.physics.add.overlap(pigs, box, catchPig, null, this);
+  // Catch detection — only destroy the pig, never the cup
+  this.physics.add.overlap(pigs, box, (pigObj, cupObj) => {
+    if (!pigObj.active) return;
+    pigObj.destroy(); // cupObj (box) never destroyed
+    score++;
+    scoreText.setText('Score: '+score);
+    if(score > highScore){
+      highScore = score;
+      localStorage.setItem('pigHighScore',highScore);
+      highText.setText('High: '+highScore);
+    }
+  });
 }
 
 function spawnPig() {
   const x = Phaser.Math.Between(50, this.scale.width - 50);
   pigs.create(x,-50,'pig').setScale(0.1);
-}
-
-function catchPig(pig, box) {
-  if (!pig.active) return;
-  pig.destroy();
-  score++;
-  scoreText.setText('Score: '+score);
-  if(score > highScore){
-    highScore = score;
-    localStorage.setItem('pigHighScore',highScore);
-    highText.setText('High: '+highScore);
-  }
 }
 
 function update() {
@@ -104,20 +101,16 @@ function update() {
 }
 
 function resetGame() {
-  // Remove overlay
   if(gameOverOverlay) gameOverOverlay.destroy();
   if(restartText) restartText.destroy();
 
-  // Reset score/misses
   score = 0;
   misses = 0;
   scoreText.setText('Score: 0');
   missText.setText('Misses: 0 / '+MAX_MISSES);
 
-  // Clear existing pigs
   pigs.clear(true,true);
 
-  // Restart spawn timer
   spawnTimer = this.time.addEvent({
     delay: 1200,
     loop: true,
@@ -126,22 +119,17 @@ function resetGame() {
 }
 
 function gameOver(){
-  // Stop spawning pigs
   spawnTimer.remove(false);
-
   const w = this.scale.width;
   const h = this.scale.height;
 
-  // Semi-transparent overlay (does NOT destroy cup)
   gameOverOverlay = this.add.rectangle(w/2,h/2,w,h,0x000000,0.6);
-
-  // Game over text
   this.add.text(w/2,h/2-40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
-
-  // Restart text
   restartText = this.add.text(w/2,h/2+20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
       .setInteractive()
       .once('pointerdown',()=>resetGame.call(this));
+
+  box.setDepth(2); // ensure cup remains on top of overlay
 }
 </script>
 
