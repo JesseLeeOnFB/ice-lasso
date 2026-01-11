@@ -2,11 +2,11 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Ice Capture</title>
+<title>Ice Capture - Jail Edition</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <style>
-body { margin:0; background: #87CEFA; }
+body { margin:0; background: #444; }
 canvas { display:block; margin:0 auto; }
 </style>
 </head>
@@ -36,8 +36,8 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bgSky','https://upload.wikimedia.org/wikipedia/commons/3/3c/Sky_-_Blue_-_Clouds.jpg'); // simple sky
-  this.load.image('cup','https://upload.wikimedia.org/wikipedia/commons/3/32/Cartoon_jail_cell.png'); // cup/jail
+  this.load.image('bg','https://upload.wikimedia.org/wikipedia/commons/2/21/Gray_wall_texture.jpg'); // jail wall
+  this.load.image('cup','https://upload.wikimedia.org/wikipedia/commons/3/32/Cartoon_jail_cell.png'); // jail cup
   this.load.image('ice','https://upload.wikimedia.org/wikipedia/commons/3/3b/Ice_cube.png'); // ice cube
 }
 
@@ -45,16 +45,16 @@ function create() {
   const w = this.scale.width;
   const h = this.scale.height;
 
-  this.add.image(w/2, h/2, 'bgSky').setDisplaySize(w,h);
+  this.add.image(w/2, h/2, 'bg').setDisplaySize(w,h);
 
-  const title = this.add.text(w/2, h/2 - 80, 'ICE CAPTURE', {
+  const title = this.add.text(w/2, h/2 - 80, 'ICE CAPTURE - JAIL', {
     font: '48px Arial',
-    fill: '#003366'
+    fill: '#ffff00'
   }).setOrigin(0.5);
 
   const tapText = this.add.text(w/2, h/2, 'Tap to Play', {
     font: '28px Arial',
-    fill: '#003366'
+    fill: '#ffff00'
   }).setOrigin(0.5);
 
   this.input.once('pointerdown', () => {
@@ -72,20 +72,20 @@ function startGame() {
   const w = this.scale.width;
   const h = this.scale.height;
 
-  scoreText = this.add.text(20,20,'Score: 0',{ font:'24px Arial', fill:'#000' });
-  highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#000' });
-  missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#aa0000' });
+  scoreText = this.add.text(20,20,'Score: 0',{ font:'24px Arial', fill:'#fff' });
+  highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#fff' });
+  missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#ff5555' });
 
-  // Big cup
-  const cup = this.add.image(w/2, h-150, 'cup').setScale(1.5);
+  // Normal sized cup
+  const cup = this.add.image(w/2, h-150, 'cup').setScale(1.0);
   cup.setOrigin(0.5,0);
 
-  // Catch zone (smaller than cup for skill)
+  // Catch zone slightly smaller than cup
   catchZone = this.add.rectangle(
     w/2,
-    h - 60,
-    120,
-    30,
+    h - 70,
+    100,
+    25,
     0xff0000,
     0
   );
@@ -94,7 +94,7 @@ function startGame() {
   iceGroup = this.physics.add.group();
 
   spawnTimer = this.time.addEvent({
-    delay: 1000,
+    delay: 900,
     loop: true,
     callback: () => spawnIce.call(this)
   });
