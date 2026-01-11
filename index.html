@@ -31,8 +31,8 @@ document.addEventListener('click', function initGame(){
         scene: {
             preload: function(){
                 // Load your local assets
-                this.load.image('ice','assets/IMG_2832.jpeg');  // Ice cube
-                this.load.image('cup','assets/IMG_2833.jpeg');  // Jail-cell cup
+                this.load.image('ice','assets/IMG_2832.jpeg');    // Ice cube
+                this.load.image('cup','assets/IMG_2834.jpeg');    // New Jail-cell cup
             },
             create: function(){
                 const w=this.scale.width, h=this.scale.height;
@@ -47,7 +47,7 @@ document.addEventListener('click', function initGame(){
                 // Ice group
                 this.iceCubes=this.physics.add.group();
                 this.time.addEvent({
-                    delay:900, // slightly slower spawn
+                    delay:900, // slower spawn
                     loop:true,
                     callback:()=>{
                         const ice=this.iceCubes.create(Phaser.Math.Between(w*0.35,w*0.65), -20, 'ice');
@@ -59,7 +59,7 @@ document.addEventListener('click', function initGame(){
                 // Cup (jail-cell)
                 const cupX=w/2, cupY=h-150;
                 this.cup=this.physics.add.staticImage(cupX, cupY, 'cup');
-                this.cup.setScale(0.5).refreshBody();
+                this.cup.setScale(0.5).refreshBody();  // adjust scale as needed
 
                 // Lasso graphics
                 this.lassoLine=this.add.graphics();
