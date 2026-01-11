@@ -20,21 +20,20 @@ let scoreText;
 let particles;
 
 function preload() {
-    // Main assets
+    // Load assets
     this.load.image('ice', 'https://labs.phaser.io/assets/sprites/ice.png');
     this.load.image('cup_bar', 'https://labs.phaser.io/assets/sprites/block.png');
-    this.load.image('lasso', 'https://labs.phaser.io/assets/sprites/blue_ball.png');
     this.load.image('spark', 'https://labs.phaser.io/assets/particles/blue.png'); // sparkle particle
 }
 
 function create() {
-    // Particle emitter for melting ice
+    // Particle system for ice melting
     particles = this.add.particles('spark');
 
     // Ice cubes group
     iceCubes = this.physics.add.group();
 
-    // Spawn ice cubes
+    // Spawn ice cubes repeatedly
     this.time.addEvent({
         delay: 800,
         callback: () => {
@@ -44,21 +43,20 @@ function create() {
                 'ice'
             );
             ice.setScale(0.5);
-            ice.setTint(0x99ffff); // light blue ice
+            ice.setTint(0x99ffff); // light blue
             ice.melt = 100;
             ice.setBounce(0.5);
             ice.setCollideWorldBounds(true);
 
-            // Add small shine sprite
+            // Shine overlay
             ice.shine = this.add.sprite(ice.x, ice.y, 'spark').setScale(0.1).setAlpha(0.5).setDepth(1);
         },
         loop: true
     });
 
-    // Cup bars forming cage
+    // Cup bars (horizontal + vertical for cage)
     const barCount = 6;
     const barWidth = 50;
-    const barHeight = 20;
 
     // Horizontal bars
     for (let i = 0; i < barCount; i++) {
@@ -68,21 +66,21 @@ function create() {
         cupBars.push(bar);
     }
 
-    // Vertical sides
+    // Vertical sides (left and right)
     for (let i = 0; i < 2; i++) {
-        let bar = this.physics.add.staticImage(300 + i * 5 + i*250, 460, 'cup_bar');
+        let bar = this.physics.add.staticImage(300 + i*250, 460, 'cup_bar');
         bar.setScale(0.1, 2).refreshBody();
         bar.setTint(0xaaaaaa);
         cupBars.push(bar);
     }
 
-    // Score text
+    // Score display
     scoreText = this.add.text(10, 10, 'Score: 0', { fontSize: '24px', fill: '#000' });
 
     // Lasso graphics
     lassoLine = this.add.graphics();
 
-    // Input for grabbing ice cubes
+    // Input: grab ice cubes
     this.input.on('pointerdown', pointer => {
         iceCubes.children.iterate(ice => {
             if (!ice) return;
@@ -100,7 +98,7 @@ function create() {
         }
     });
 
-    // Collide ice with cup bars
+    // Collide ice cubes with cup bars
     cupBars.forEach(bar => {
         this.physics.add.collider(iceCubes, bar);
     });
@@ -113,7 +111,7 @@ function update() {
         const pointer = this.input.activePointer;
         grabbed.setPosition(pointer.x, pointer.y);
 
-        // Draw lasso line
+        // Lasso line
         lassoLine.lineStyle(4, 0x00ffff, 1);
         lassoLine.beginPath();
         lassoLine.moveTo(pointer.x, pointer.y);
@@ -121,11 +119,11 @@ function update() {
         lassoLine.strokePath();
     }
 
-    // Melting mechanic & particle effect
+    // Melting + particles
     iceCubes.children.iterate(ice => {
         if (!ice) return;
 
-        // Move shine with ice
+        // Update shine position
         if (ice.shine) {
             ice.shine.x = ice.x;
             ice.shine.y = ice.y;
@@ -138,7 +136,7 @@ function update() {
             ice.setAlpha(ice.melt / 100);
             if (ice.shine) ice.shine.setAlpha(ice.melt / 100);
 
-            // Emit particles while melting
+            // Emit sparkle particles
             particles.createEmitter({
                 x: ice.x,
                 y: ice.y,
@@ -150,6 +148,7 @@ function update() {
                 frequency: 50
             });
 
+            // Destroy melted ice
             if (ice.melt <= 0) {
                 if (ice.shine) ice.shine.destroy();
                 ice.destroy();
