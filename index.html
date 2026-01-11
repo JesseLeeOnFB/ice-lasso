@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function(){
     class StartScene extends Phaser.Scene {
         constructor(){ super({key:'StartScene'}); }
         preload(){
+            // placeholder images
             this.load.image('ice','https://via.placeholder.com/50/00ffff/ffffff?text=Ice');
             this.load.image('cup_bar','https://via.placeholder.com/150x20/964B00/ffffff?text=Bar');
         }
@@ -38,7 +39,6 @@ document.addEventListener('DOMContentLoaded', function(){
             this.add.text(width/2, height/2-50, 'Ice Lasso', {font:'48px Arial', fill:'#fff', fontStyle:'bold'}).setOrigin(0.5);
             this.add.text(width/2, height/2+20, 'Tap to Start', {font:'28px Arial', fill:'#fff'}).setOrigin(0.5);
 
-            // iPhone requires first tap
             this.input.once('pointerdown', ()=>{
                 this.scene.start('GameScene');
             });
