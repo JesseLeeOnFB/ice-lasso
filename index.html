@@ -30,9 +30,9 @@ document.addEventListener('click', function initGame(){
         scale:{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
         scene: {
             preload: function(){
-                // Load assets
-                this.load.image('ice','assets/IMG_2832.jpeg');    // Ice cube
-                this.load.image('cup','assets/IMG_2834.png');    // New cup image
+                // Load online assets
+                this.load.image('ice','https://www.kindpng.com/picc/m/688-6883664_ice-cube-png-transparent-png.png'); // online ice cube PNG  [oai_citation:2‡KindPNG](https://www.kindpng.com/imgv/TxhTwTb_ice-cube-png-transparent-png/?utm_source=chatgpt.com)
+                this.load.image('cup','https://pngtree.com/freepng/transparent-water-glass_6324384.png'); // online cup PNG (placeholder)  [oai_citation:3‡Pngtree](https://pngtree.com/freepng/transparent-glass-cup_6324384.html?utm_source=chatgpt.com)
             },
             create: function(){
                 const w=this.scale.width, h=this.scale.height;
@@ -47,29 +47,25 @@ document.addEventListener('click', function initGame(){
                 // Ice group
                 this.iceCubes=this.physics.add.group();
                 this.time.addEvent({
-                    delay:900, // slightly slower spawn
+                    delay:900,
                     loop:true,
                     callback:()=>{
                         const ice=this.iceCubes.create(Phaser.Math.Between(w*0.35,w*0.65), -20, 'ice');
-                        ice.setScale(0.3).setBounce(0.3).setCollideWorldBounds(true);
+                        ice.setScale(0.25).setBounce(0.3).setCollideWorldBounds(true);
                         ice.melt=100;
                     }
                 });
 
                 // Cup visual
-                const cupX=w/2, cupY=h-150;
-                this.cup=this.add.image(cupX, cupY, 'cup');
-                this.cup.setScale(0.5);  // adjust size to fit screen
+                const cupX=w/2, cupY=h-120;
+                this.cupImg=this.add.image(cupX,cupY,'cup').setScale(0.5);
 
-                // Invisible bottom rectangle collider for cup
-                const cupWidth=200*this.cup.scaleX;  // adjust to image size
-                const cupHeight=20;
+                // Invisible bottom collider
                 this.cupCollider=this.physics.add.staticGroup();
-                this.cupCollider.create(cupX, cupY + this.cup.displayHeight/2 - cupHeight/2, null)
-                    .setDisplaySize(cupWidth, cupHeight)
-                    .refreshBody();
+                this.cupCollider.create(cupX, cupY+this.cupImg.displayHeight/2 - 10, null)
+                    .setDisplaySize(this.cupImg.displayWidth*0.8, 20).refreshBody();
 
-                // Lasso graphics
+                // Lasso
                 this.lassoLine=this.add.graphics();
                 this.grabbed=null;
 
@@ -87,10 +83,8 @@ document.addEventListener('click', function initGame(){
                     if(this.grabbed){ this.grabbed.body.allowGravity=true; this.grabbed=null; }
                 });
 
-                // Collider with cup bottom
-                this.physics.add.collider(this.iceCubes, this.cupCollider, (ice)=>{
-                    // Do nothing on collision, melting handled in update
-                });
+                // Collider
+                this.physics.add.collider(this.iceCubes, this.cupCollider);
             },
             update: function(){
                 this.lassoLine.clear();
@@ -104,19 +98,21 @@ document.addEventListener('click', function initGame(){
                     this.lassoLine.strokePath();
                 }
 
-                // Ice melting & score
+                // Melting & scoring
                 this.iceCubes.children.iterate(ice=>{
                     if(!ice) return;
-                    if(Phaser.Geom.Intersects.RectangleToRectangle(ice.getBounds(), this.cupCollider.getChildren()[0].getBounds())){
-                        ice.melt-=0.5;
-                        ice.setScale(0.3*(ice.melt/100));
-                        ice.setAlpha(ice.melt/100);
-                        if(ice.melt<=0){
-                            ice.destroy();
-                            this.score++;
-                            this.scoreText.setText('Score: '+this.score);
+                    this.cupCollider.getChildren().forEach(collider=>{
+                        if(Phaser.Geom.Intersects.RectangleToRectangle(ice.getBounds(), collider.getBounds())){
+                            ice.melt-=0.5;
+                            ice.setScale(0.25*(ice.melt/100));
+                            ice.setAlpha(ice.melt/100);
+                            if(ice.melt<=0){
+                                ice.destroy();
+                                this.score++;
+                                this.scoreText.setText('Score: '+this.score);
+                            }
                         }
-                    }
+                    });
                 });
             }
         }
