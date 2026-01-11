@@ -19,6 +19,7 @@ let score = 0, misses = 0;
 let highScore = localStorage.getItem('pigHighScore') || 0;
 const MAX_MISSES = 15;
 let spawnTimer;
+let grabbedPig = null;
 
 const config = {
   type: Phaser.CANVAS,
@@ -31,9 +32,9 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bg', 'assets/IMG_2835.jpeg'); // desert background
-  this.load.image('box', 'assets/IMG_2837.jpeg'); // cup / box
-  this.load.image('pig', 'assets/IMG_2836.jpeg'); // pig falling object
+  this.load.image('bg', 'assets/IMG_2835.jpeg');    // desert
+  this.load.image('box', 'assets/IMG_2837.jpeg');   // cup / box
+  this.load.image('pig', 'assets/IMG_2836.jpeg');   // pig falling object
 }
 
 function create() {
@@ -41,7 +42,7 @@ function create() {
   const h = this.scale.height;
 
   // Background
-  this.add.image(w/2, h/2, 'bg').setDisplaySize(w, h);
+  this.add.image(w/2, h/2, 'bg').setDisplaySize(w,h);
 
   // Start screen
   const title = this.add.text(w/2, h/2 - 80, 'PIG CATCHER', { font: '48px Arial', fill: '#000' }).setOrigin(0.5);
@@ -62,14 +63,15 @@ function startGame() {
   const w = this.scale.width;
   const h = this.scale.height;
 
-  scoreText = this.add.text(20, 20, 'Score: 0', { font: '24px Arial', fill: '#000' });
-  highText = this.add.text(20, 50, 'High: ' + highScore, { font: '20px Arial', fill: '#000' });
-  missText = this.add.text(20, 80, 'Misses: 0 / ' + MAX_MISSES, { font: '20px Arial', fill: '#aa0000' });
+  // Score displays
+  scoreText = this.add.text(20,20,'Score: 0',{ font:'24px Arial', fill:'#000' });
+  highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#000' });
+  missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#aa0000' });
 
-  // Cup (box)
-  box = this.physics.add.staticImage(w/2, h - 140, 'box').setScale(1.2).refreshBody();
+  // Cup / box
+  box = this.physics.add.staticImage(w/2, h-140, 'box').setScale(1.5).refreshBody();
 
-  // Pigs group
+  // Group for pigs
   pigs = this.physics.add.group();
 
   spawnTimer = this.time.addEvent({
@@ -78,23 +80,47 @@ function startGame() {
     callback: () => spawnPig.call(this)
   });
 
+  // Catch detection
   this.physics.add.overlap(pigs, box, catchPig, null, this);
+
+  // Drag pigs
+  this.input.on('pointerdown', p => {
+    pigs.children.iterate(pig => {
+      if (!pig.active) return;
+      if (Phaser.Math.Distance.Between(p.x,p.y,pig.x,pig.y) < 50) {
+        grabbedPig = pig;
+        pig.body.setAllowGravity(false);
+        pig.body.setVelocity(0);
+      }
+    });
+  });
+
+  this.input.on('pointermove', p => {
+    if (grabbedPig) grabbedPig.setPosition(p.x,p.y);
+  });
+
+  this.input.on('pointerup', () => {
+    if (grabbedPig) {
+      grabbedPig.body.setAllowGravity(true);
+      grabbedPig = null;
+    }
+  });
 }
 
 function spawnPig() {
   const w = this.scale.width;
+  const h = this.scale.height;
 
-  // Spawn within cup width ± half of cup
+  // Spawn pigs within cup width area
   const boxWidth = box.displayWidth;
   const x = Phaser.Math.Between(box.x - boxWidth/2 + 20, box.x + boxWidth/2 - 20);
 
-  const pig = pigs.create(x, -50, 'pig').setScale(0.6);
-  pig.setVelocityY(0); // gravity will pull
+  const pig = pigs.create(x, -50, 'pig').setScale(0.2);
   pig.body.setCollideWorldBounds(true);
   pig.body.onWorldBounds = true;
 
   pig.body.world.on('worldbounds', body => {
-    if (body.gameObject === pig && pig.active && pig.y >= this.scale.height - 20) {
+    if (body.gameObject === pig && pig.active && pig.y >= h-20) {
       pig.destroy();
       misses++;
       missText.setText('Misses: ' + misses + ' / ' + MAX_MISSES);
@@ -113,24 +139,24 @@ function catchPig(pig, box) {
     localStorage.setItem('pigHighScore', highScore);
     highText.setText('High: ' + highScore);
 
-    const text = this.add.text(this.scale.width/2, 150, 'NEW HIGH SCORE!', { font: '32px Arial', fill: '#ffdd00' }).setOrigin(0.5);
-    this.tweens.add({ targets: text, y: 100, alpha: 0, duration: 1200, onComplete: ()=>text.destroy() });
+    const text = this.add.text(this.scale.width/2,150,'NEW HIGH SCORE!',{font:'32px Arial',fill:'#ffdd00'}).setOrigin(0.5);
+    this.tweens.add({ targets:text, y:100, alpha:0, duration:1200, onComplete:()=>text.destroy() });
   }
 }
 
 function gameOver() {
   spawnTimer.remove(false);
-  pigs.clear(true, true);
+  pigs.clear(true,true);
   const w = this.scale.width;
   const h = this.scale.height;
-  this.add.rectangle(w/2, h/2, w, h, 0x000000, 0.6);
-  this.add.text(w/2, h/2 - 40, 'GAME OVER', { font: '48px Arial', fill: '#fff' }).setOrigin(0.5);
-  this.add.text(w/2, h/2 + 20, 'Tap to Restart', { font: '24px Arial', fill: '#fff' }).setOrigin(0.5)
-      .once('pointerdown', ()=>location.reload());
+  this.add.rectangle(w/2,h/2,w,h,0x000000,0.6);
+  this.add.text(w/2,h/2 - 40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
+  this.add.text(w/2,h/2 + 20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
+      .once('pointerdown',()=>location.reload());
 }
 
 function update() {
-  // no pointer dragging for now
+  // Nothing needed here now
 }
 </script>
 
