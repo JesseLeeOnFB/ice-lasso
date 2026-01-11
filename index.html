@@ -56,7 +56,7 @@ function create() {
   cup.body.immovable = true;       // cannot be pushed
   cup.setDepth(2);                  // always on top
 
-  // Cup follows pointer
+  // Cup follows pointer horizontally
   this.input.on('pointermove', function(pointer){
     cup.x = Phaser.Math.Clamp(pointer.x, cup.displayWidth/2, w - cup.displayWidth/2);
   });
@@ -71,10 +71,10 @@ function create() {
     callback: ()=>spawnPig.call(this)
   });
 
-  // Catch pigs
+  // Catch pigs — use unique names for callback parameters
   this.physics.add.overlap(pigs, cup, (pigObj, cupObj) => {
-    if (!pigObj.active) return;
-    pigObj.destroy();   // ONLY destroy pig
+    if (!pigObj.active) return;  // only destroy pig
+    pigObj.destroy();             // cupObj NEVER destroyed
     score++;
     scoreText.setText('Score: '+score);
     if(score > highScore){
@@ -102,16 +102,20 @@ function update() {
 }
 
 function resetGame() {
+  // Remove overlay
   if(gameOverOverlay) gameOverOverlay.destroy();
   if(restartText) restartText.destroy();
 
+  // Reset score/misses
   score = 0;
   misses = 0;
   scoreText.setText('Score: 0');
   missText.setText('Misses: 0 / '+MAX_MISSES);
 
+  // Clear existing pigs
   pigs.clear(true,true);
 
+  // Restart spawn timer
   spawnTimer = this.time.addEvent({
     delay: 1200,
     loop: true,
@@ -120,18 +124,26 @@ function resetGame() {
 }
 
 function gameOver(){
+  // Stop spawning pigs
   spawnTimer.remove(false);
+
   const w = this.scale.width;
   const h = this.scale.height;
 
+  // Semi-transparent overlay
   gameOverOverlay = this.add.rectangle(w/2,h/2,w,h,0x000000,0.6);
+
+  // Game over text
   this.add.text(w/2,h/2-40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
+
+  // Restart text
   restartText = this.add.text(w/2,h/2+20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
       .setInteractive()
       .once('pointerdown',()=>resetGame.call(this));
 
-  cup.setDepth(2); // cup always above overlay
+  cup.setDepth(2); // ensure cup always on top
 }
 </script>
+
 </body>
 </html>
