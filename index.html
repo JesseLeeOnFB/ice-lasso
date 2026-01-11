@@ -30,14 +30,12 @@ document.addEventListener('click', function initGame(){
         scale:{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
         scene: {
             preload: function(){
-                // Load online assets
-                this.load.image('ice','https://www.kindpng.com/picc/m/688-6883664_ice-cube-png-transparent-png.png'); // online ice cube PNG  [oai_citation:2‡KindPNG](https://www.kindpng.com/imgv/TxhTwTb_ice-cube-png-transparent-png/?utm_source=chatgpt.com)
-                this.load.image('cup','https://pngtree.com/freepng/transparent-water-glass_6324384.png'); // online cup PNG (placeholder)  [oai_citation:3‡Pngtree](https://pngtree.com/freepng/transparent-glass-cup_6324384.html?utm_source=chatgpt.com)
+                this.load.image('ice','https://www.kindpng.com/picc/m/688-6883664_ice-cube-png-transparent-png.png');
+                this.load.image('cup','https://pngtree.com/freepng/transparent-water-glass_6324384.png');
             },
             create: function(){
                 const w=this.scale.width, h=this.scale.height;
 
-                // Background
                 this.cameras.main.setBackgroundColor('#aeefff');
 
                 // Score
@@ -51,8 +49,8 @@ document.addEventListener('click', function initGame(){
                     loop:true,
                     callback:()=>{
                         const ice=this.iceCubes.create(Phaser.Math.Between(w*0.35,w*0.65), -20, 'ice');
-                        ice.setScale(0.25).setBounce(0.3).setCollideWorldBounds(true);
-                        ice.melt=100;
+                        ice.setScale(0.35).setBounce(0.3).setCollideWorldBounds(true);
+                        ice.spawnTime=this.time.now; // store spawn timestamp
                     }
                 });
 
@@ -60,10 +58,11 @@ document.addEventListener('click', function initGame(){
                 const cupX=w/2, cupY=h-120;
                 this.cupImg=this.add.image(cupX,cupY,'cup').setScale(0.5);
 
-                // Invisible bottom collider
+                // Invisible bottom collider for instant score
                 this.cupCollider=this.physics.add.staticGroup();
                 this.cupCollider.create(cupX, cupY+this.cupImg.displayHeight/2 - 10, null)
-                    .setDisplaySize(this.cupImg.displayWidth*0.8, 20).refreshBody();
+                    .setDisplaySize(this.cupImg.displayWidth*0.8, 20)
+                    .refreshBody();
 
                 // Lasso
                 this.lassoLine=this.add.graphics();
@@ -73,7 +72,7 @@ document.addEventListener('click', function initGame(){
                 this.input.on('pointerdown', pointer=>{
                     this.iceCubes.children.iterate(ice=>{
                         if(!ice) return;
-                        if(Phaser.Math.Distance.Between(pointer.x,pointer.y,ice.x,ice.y)<40){
+                        if(Phaser.Math.Distance.Between(pointer.x,pointer.y,ice.x,ice.y)<50){
                             this.grabbed=ice;
                             ice.body.allowGravity=false;
                         }
@@ -83,8 +82,17 @@ document.addEventListener('click', function initGame(){
                     if(this.grabbed){ this.grabbed.body.allowGravity=true; this.grabbed=null; }
                 });
 
-                // Collider
-                this.physics.add.collider(this.iceCubes, this.cupCollider);
+                // Collider with cup for scoring
+                this.physics.add.collider(this.iceCubes, this.cupCollider, (ice)=>{
+                    if(!ice.active) return;
+
+                    // Fast catch bonus: 2 seconds threshold
+                    const elapsed=(this.time.now - ice.spawnTime)/1000;
+                    let points= elapsed <= 2 ? 2 : 1;
+                    ice.destroy();
+                    this.score+=points;
+                    this.scoreText.setText('Score: '+this.score);
+                });
             },
             update: function(){
                 this.lassoLine.clear();
@@ -97,23 +105,6 @@ document.addEventListener('click', function initGame(){
                     this.lassoLine.lineTo(p.x,p.y-20);
                     this.lassoLine.strokePath();
                 }
-
-                // Melting & scoring
-                this.iceCubes.children.iterate(ice=>{
-                    if(!ice) return;
-                    this.cupCollider.getChildren().forEach(collider=>{
-                        if(Phaser.Geom.Intersects.RectangleToRectangle(ice.getBounds(), collider.getBounds())){
-                            ice.melt-=0.5;
-                            ice.setScale(0.25*(ice.melt/100));
-                            ice.setAlpha(ice.melt/100);
-                            if(ice.melt<=0){
-                                ice.destroy();
-                                this.score++;
-                                this.scoreText.setText('Score: '+this.score);
-                            }
-                        }
-                    });
-                });
             }
         }
     };
