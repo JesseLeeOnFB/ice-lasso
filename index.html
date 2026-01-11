@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pig Catcher - Desert Edition</title>
+<title>Pig Catcher - Desert</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <style>
@@ -36,24 +36,22 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bg','https://gallery.yopriceville.com/var/resizes/Backgrounds/Desert_Sand_Background.jpg?m=1629825970'); // desert background  [oai_citation:3‡Gallery Yopriceville](https://gallery.yopriceville.com/Backgrounds/Desert_Sand_Background?utm_source=chatgpt.com)
-  this.load.image('box','https://www.clipartmax.com/png/middle/84-845633_box-wood-clipart-crate-clipart.png'); // box crate  [oai_citation:4‡ClipartMax.com](https://www.clipartmax.com/middle/m2i8G6d3H7A0G6m2_box-wood-clipart-crate-clipart/?utm_source=chatgpt.com)
-  this.load.image('pig','https://www.flyclipart.com/pig-cartoon-png-png-image-cartoon-pig-png-605852.png'); // pig PNG  [oai_citation:5‡FlyClipart](https://flyclipart.com/pig-cartoon-png-png-image-cartoon-pig-png-605852?utm_source=chatgpt.com)
+  // Hotlinked images
+  this.load.image('bg','https://images.unsplash.com/photo-1597892037957-bf8c9f5b7fc1?auto=format&fit=crop&w=1920&q=80'); // desert
+  this.load.image('box','https://upload.wikimedia.org/wikipedia/commons/6/6d/Wooden_crate.png'); // box
+  this.load.image('pig','https://upload.wikimedia.org/wikipedia/commons/3/3a/Pig_icon.png'); // pig
 }
 
 function create() {
   const w = this.scale.width;
   const h = this.scale.height;
 
+  // Background
   this.add.image(w/2, h/2, 'bg').setDisplaySize(w,h);
 
-  const title = this.add.text(w/2, h/2 - 80, 'PIG CATCHER', {
-    font: '48px Arial', fill: '#000'
-  }).setOrigin(0.5);
-
-  const tapText = this.add.text(w/2, h/2, 'Tap to Play', {
-    font: '28px Arial', fill: '#000'
-  }).setOrigin(0.5);
+  // Start screen
+  const title = this.add.text(w/2, h/2 - 80, 'PIG CATCHER', { font: '48px Arial', fill: '#000' }).setOrigin(0.5);
+  const tapText = this.add.text(w/2, h/2, 'Tap to Play', { font: '28px Arial', fill: '#000' }).setOrigin(0.5);
 
   this.input.once('pointerdown', () => {
     title.destroy();
@@ -74,13 +72,14 @@ function startGame() {
   highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#000' });
   missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#aa0000' });
 
-  const box = this.add.image(w/2, h-130, 'box').setScale(1.2);
+  // Box (catch cup)
+  const box = this.add.image(w/2, h-140, 'box').setScale(1.5);
   box.setOrigin(0.5,0);
 
   catchZone = this.add.rectangle(
     w/2,
     h - 60,
-    120,
+    150,
     30,
     0xff0000,
     0
@@ -128,7 +127,7 @@ function startGame() {
       localStorage.setItem('pigHighScore', highScore);
       highText.setText('High: ' + highScore);
 
-      const text = this.add.text(w/2,150,'NEW HIGH SCORE!',{font:'32px Arial',fill:'#ffdd00'}).setOrigin(0.5);
+      const text = this.add.text(this.scale.width/2,150,'NEW HIGH SCORE!',{font:'32px Arial',fill:'#ffdd00'}).setOrigin(0.5);
       this.tweens.add({
         targets:text, y:100, alpha:0, duration:1200,
         onComplete:()=>text.destroy()
@@ -145,7 +144,7 @@ function spawnPig() {
     -60,
     'pig'
   );
-  pig.setScale(0.8);
+  pig.setScale(0.9);
   pig.grabbed = false;
 
   pig.body.setCollideWorldBounds(true);
@@ -159,9 +158,9 @@ function spawnPig() {
       if (misses >= MAX_MISSES) {
         spawnTimer.remove(false);
         pigGroup.clear(true,true);
-        this.add.rectangle(w/2,this.scale.height/2,w,this.scale.height,0x000000,0.6);
-        this.add.text(w/2,this.scale.height/2 - 40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
-        this.add.text(w/2,this.scale.height/2 + 20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
+        this.add.rectangle(this.scale.width/2,this.scale.height/2,this.scale.width,this.scale.height,0x000000,0.6);
+        this.add.text(this.scale.width/2,this.scale.height/2 - 40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
+        this.add.text(this.scale.width/2,this.scale.height/2 + 20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
           .once('pointerdown',()=>location.reload());
       }
     }
