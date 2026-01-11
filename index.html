@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pig Catcher - Move the Cup</title>
+<title>Pig Catcher Game</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <style>
@@ -27,12 +27,12 @@ const config = {
   scene: { preload, create, update }
 };
 
-new Phaser.Game(config);
+let gameInstance = new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bg','assets/IMG_2835.jpeg'); // desert background
-  this.load.image('box','assets/IMG_2837.jpeg'); // cup/box
-  this.load.image('pig','assets/IMG_2836.jpeg'); // pig
+  this.load.image('bg','assets/IMG_2835.jpeg');
+  this.load.image('box','assets/IMG_2837.jpeg');
+  this.load.image('pig','assets/IMG_2836.jpeg');
 }
 
 function create() {
@@ -42,7 +42,7 @@ function create() {
   // Background
   this.add.image(w/2,h/2,'bg').setDisplaySize(w,h);
 
-  // Score UI
+  // Score texts
   scoreText = this.add.text(20,20,'Score: 0',{font:'24px Arial',fill:'#000'});
   highText = this.add.text(20,50,'High: '+highScore,{font:'20px Arial',fill:'#000'});
   missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#aa0000'});
@@ -98,15 +98,39 @@ function update() {
   });
 }
 
+function resetGame() {
+  // Reset variables
+  score = 0;
+  misses = 0;
+  scoreText.setText('Score: 0');
+  missText.setText('Misses: 0 / '+MAX_MISSES);
+
+  // Clear pigs
+  pigs.clear(true,true);
+
+  // Restart spawn timer
+  spawnTimer = this.time.addEvent({
+    delay: 1200,
+    loop: true,
+    callback: ()=>spawnPig.call(this)
+  });
+}
+
 function gameOver(){
   spawnTimer.remove(false);
   pigs.clear(true,true);
   const w = this.scale.width;
   const h = this.scale.height;
+
+  // Semi-transparent overlay
   this.add.rectangle(w/2,h/2,w,h,0x000000,0.6);
+
+  // Game over text
   this.add.text(w/2,h/2-40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
+  
+  // Restart text
   this.add.text(w/2,h/2+20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
-      .once('pointerdown',()=>location.reload());
+      .once('pointerdown',()=>resetGame.call(this));
 }
 </script>
 
