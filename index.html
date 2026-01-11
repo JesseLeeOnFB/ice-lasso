@@ -34,7 +34,7 @@ new Phaser.Game(config);
 
 function preload() {
   this.load.image('bg','assets/IMG_2835.jpeg');    // background
-  this.load.image('cup','assets/IMG_2837.jpeg');   // cup (correct JPEG)
+  this.load.image('cup','assets/IMG_2837.jpeg');   // cup
   this.load.image('pig','assets/IMG_2836.jpeg');   // pig
 }
 
@@ -46,12 +46,12 @@ function create() {
   this.add.image(w/2,h/2,'bg').setDisplaySize(w,h);
 
   // UI
-  scoreText = this.add.text(20,20,'Score: 0',{font:'24px Arial',fill:'#000'});
-  highText = this.add.text(20,50,'High: '+highScore,{font:'20px Arial',fill:'#000'});
-  missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#aa0000'});
+  scoreText = this.add.text(20,20,'Score: 0',{font:'24px Arial',fill:'#fff'});
+  highText = this.add.text(20,50,'High: '+highScore,{font:'20px Arial',fill:'#fff'});
+  missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#ff5555'});
 
-  // Cup (smaller, always visible)
-  cup = this.add.image(w/2,h-150,'cup').setDisplaySize(150,150).setOrigin(0.5,1);
+  // Cup (smaller, harder)
+  cup = this.add.image(w/2,h-150,'cup').setDisplaySize(100,100).setOrigin(0.5,1);
 
   // Move cup with pointer
   this.input.on('pointermove', pointer => {
@@ -78,7 +78,7 @@ function spawnPig() {
   for(let i=0; i<pigsPerSpawn; i++){
     const xPos = Phaser.Math.Between(50, w-50);
     const pig = this.add.image(xPos, -50, 'pig');
-    pig.setScale(0.2); // size of pig
+    pig.setScale(0.2);
     pigs.push(pig);
   }
 }
@@ -135,7 +135,16 @@ function update() {
 }
 
 function resetGame() {
-  if(gameOverOverlay) { gameOverOverlay.destroy(); gameOverOverlay = null; }
+  if(gameOverOverlay) { 
+    // Fade out dark overlay for restart
+    this.tweens.add({
+      targets: gameOverOverlay,
+      alpha: 0,
+      duration: 500,
+      onComplete: ()=> gameOverOverlay.destroy()
+    });
+    gameOverOverlay = null;
+  }
   if(restartText) { restartText.destroy(); restartText = null; }
 
   score = 0;
@@ -161,7 +170,8 @@ function gameOver(){
   const w = this.scale.width;
   const h = this.scale.height;
 
-  gameOverOverlay = this.add.rectangle(w/2,h/2,w,h,0x000000,0.6);
+  // Dark overlay stays on screen
+  gameOverOverlay = this.add.rectangle(w/2,h/2,w,h,0x000000,0.5);
   this.add.text(w/2,h/2-40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
   restartText = this.add.text(w/2,h/2+20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
       .setInteractive()
