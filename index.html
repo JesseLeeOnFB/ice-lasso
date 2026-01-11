@@ -31,9 +31,9 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bg','https://i.imgur.com/IYJTxoF.jpeg'); // desert background
-  this.load.image('box','https://i.imgur.com/f2W6X4E.png'); // simple box/cup online PNG
-  this.load.image('pig','https://i.imgur.com/0kK5PqL.png'); // pig online PNG
+  this.load.image('bg','assets/IMG_2835.jpeg'); // Background
+  this.load.image('box','assets/IMG_2837.jpeg'); // Cup
+  this.load.image('pig','assets/IMG_2836.jpeg'); // Pig
 }
 
 function create() {
@@ -49,7 +49,7 @@ function create() {
   missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#aa0000'});
 
   // Cup / box (static physics, always visible)
-  box = this.physics.add.staticImage(w/2,h-140,'box').setScale(0.3).refreshBody();
+  box = this.physics.add.staticImage(w/2,h-140,'box').setScale(1.5).refreshBody();
 
   // Cup follows pointer horizontally
   this.input.on('pointermove', function (pointer) {
