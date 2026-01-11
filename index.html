@@ -11,6 +11,7 @@
 </style>
 </head>
 <body>
+
 <div style="text-align:center; margin-top:50%;">
   <h1 style="color:white;">Ice Lasso</h1>
   <p style="color:white;">Tap anywhere to start</p>
@@ -22,19 +23,21 @@ document.addEventListener('click', function initGame(){
     document.body.innerHTML=''; // remove start text
 
     const config = {
-        type: Phaser.CANVAS, // CANVAS forces better mobile compatibility
+        type: Phaser.CANVAS, // forces better mobile compatibility
         width: window.innerWidth*0.95,
         height: window.innerHeight*0.95,
         physics:{ default:'arcade', arcade:{ gravity:{y:350}, debug:false } },
         scale:{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
         scene: {
             preload: function(){
+                // Placeholder images
                 this.load.image('ice','https://via.placeholder.com/50/00ffff/ffffff?text=Ice');
                 this.load.image('cup_bar','https://via.placeholder.com/150x20/964B00/ffffff?text=Bar');
             },
             create: function(){
                 const w=this.scale.width, h=this.scale.height;
 
+                // Score
                 this.score=0;
                 this.scoreText=this.add.text(10,10,'Score: 0',{font:'24px Arial',fill:'#fff'});
 
@@ -50,19 +53,29 @@ document.addEventListener('click', function initGame(){
                     }
                 });
 
-                // Cup
+                // Cup bars
                 this.cupBars=[];
                 const cupW=w*0.25, cupH=h*0.08;
                 const cupX=w/2-cupW/2, cupY=h-cupH-50;
+
+                // Horizontal bars
                 for(let i=0;i<3;i++){
                     const bar=this.physics.add.staticImage(cupX+cupW/2, cupY+i*(cupH/3),'cup_bar');
                     bar.setScale(cupW/50,0.2).refreshBody().setTint(0xaaaaaa);
                     this.cupBars.push(bar);
                 }
+                // Vertical bars
+                for(let i=0;i<2;i++){
+                    const bar=this.physics.add.staticImage(cupX+i*cupW, cupY+cupH/2, 'cup_bar');
+                    bar.setScale(0.08,cupH/20).refreshBody().setTint(0xaaaaaa);
+                    this.cupBars.push(bar);
+                }
 
+                // Lasso
                 this.lassoLine=this.add.graphics();
                 this.grabbed=null;
 
+                // Input
                 this.input.on('pointerdown', pointer=>{
                     this.iceCubes.children.iterate(ice=>{
                         if(!ice) return;
@@ -76,6 +89,7 @@ document.addEventListener('click', function initGame(){
                     if(this.grabbed){ this.grabbed.body.allowGravity=true; this.grabbed=null; }
                 });
 
+                // Colliders
                 this.cupBars.forEach(bar => this.physics.add.collider(this.iceCubes, bar));
             },
             update: function(){
@@ -89,6 +103,8 @@ document.addEventListener('click', function initGame(){
                     this.lassoLine.lineTo(p.x,p.y-20);
                     this.lassoLine.strokePath();
                 }
+
+                // Ice melting & score
                 this.iceCubes.children.iterate(ice=>{
                     if(!ice) return;
                     const overCup=this.cupBars.some(bar=>Phaser.Geom.Intersects.RectangleToRectangle(ice.getBounds(), bar.getBounds()));
