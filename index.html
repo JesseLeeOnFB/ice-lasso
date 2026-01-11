@@ -57,12 +57,12 @@ document.addEventListener('click', function initGame(){
 
                 // Cup visual
                 const cupX=w/2, cupY=h-180;
-                this.cupImg=this.add.image(cupX,cupY,'cup').setScale(0.5);
+                this.cupImg=this.add.image(cupX,cupY,'cup').setScale(0.7); // bigger cup
 
                 // Collider at bottom of cup
                 this.cupCollider=this.physics.add.staticGroup();
                 this.cupCollider.create(cupX, cupY + this.cupImg.displayHeight/2 - 20, null)
-                    .setDisplaySize(this.cupImg.displayWidth*0.6, 20) // narrower than cup width
+                    .setDisplaySize(this.cupImg.displayWidth*0.6, 20) // collider slightly narrower than cup
                     .refreshBody();
 
                 // Lasso
