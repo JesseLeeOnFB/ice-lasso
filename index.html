@@ -1,128 +1,107 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Ice Lasso</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <style>
-  body { margin:0; background:#aeefff; }
-  canvas { display:block; margin:0 auto; }
+body { margin:0; background:#9ad7ff; }
+canvas { display:block; margin:0 auto; }
 </style>
 </head>
 <body>
 
-<div style="text-align:center; margin-top:50%;">
-  <h1 style="color:white;">Ice Lasso</h1>
-  <p style="color:white;">Tap anywhere to start</p>
-</div>
-
 <script>
-document.addEventListener('click', function initGame(){
+const config = {
+  type: Phaser.CANVAS,
+  width: window.innerWidth,
+  height: window.innerHeight,
+  physics: {
+    default: 'arcade',
+    arcade: { gravity: { y: 300 }, debug: false }
+  },
+  scene: { preload, create, update }
+};
 
-    document.body.innerHTML=''; // remove start text
+let iceGroup, cup, scoreText, score = 0, grabbed = null, rope;
 
-    const config = {
-        type: Phaser.CANVAS,
-        width: window.innerWidth*0.95,
-        height: window.innerHeight*0.95,
-        physics:{ default:'arcade', arcade:{ gravity:{y:120}, debug:false } },
-        scale:{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-        scene: {
-            preload: function(){
-                // Online images
-                this.load.image('ice','https://upload.wikimedia.org/wikipedia/commons/3/3b/Ice_cube.png');
-                this.load.image('cup','https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Empty_glass_cup.png/600px-Empty_glass_cup.png');
+new Phaser.Game(config);
 
-                // Catch sound
-                this.load.audio('catch','https://freesound.org/data/previews/103/103047_861714-lq.mp3');
-            },
-            create: function(){
-                const w=this.scale.width, h=this.scale.height;
+function preload() {
+  this.load.image('ice','https://upload.wikimedia.org/wikipedia/commons/3/3b/Ice_cube.png');
+}
 
-                this.cameras.main.setBackgroundColor('#aeefff');
+function create() {
+  const w = this.scale.width;
+  const h = this.scale.height;
 
-                // Score
-                this.score=0;
-                this.scoreText=this.add.text(10,10,'Score: 0',{font:'24px Arial',fill:'#000'});
+  this.cameras.main.setBackgroundColor('#9ad7ff');
 
-                // Sound
-                this.catchSound = this.sound.add('catch');
+  scoreText = this.add.text(20,20,'Score: 0',{font:'24px Arial',fill:'#000'});
 
-                // Cup visual
-                const cupX=w/2, cupY=h-180;
-                this.cupImg=this.add.image(cupX,cupY,'cup').setScale(1.5); // 3x original ~1.5 scale
+  // CUP (simple rectangle — WORKS)
+  cup = this.physics.add.staticImage(w/2, h-100)
+    .setDisplaySize(200, 40)
+    .refreshBody();
 
-                // Collider at bottom of cup
-                this.cupCollider=this.physics.add.staticGroup();
-                this.cupCollider.create(cupX, cupY + this.cupImg.displayHeight/2 - 30, null)
-                    .setDisplaySize(this.cupImg.displayWidth*0.6, 30)
-                    .refreshBody();
+  // Visual cup bars
+  const bars = this.add.graphics();
+  bars.lineStyle(6, 0x444444);
+  bars.strokeRect(w/2 - 100, h-150, 200, 120);
 
-                // Ice group
-                this.iceCubes=this.physics.add.group();
-                this.time.addEvent({
-                    delay:900,
-                    loop:true,
-                    callback:()=>{
-                        // Spawn ice inside cup's horizontal range
-                        const minX = cupX - this.cupImg.displayWidth*0.25;
-                        const maxX = cupX + this.cupImg.displayWidth*0.25;
-                        const ice=this.iceCubes.create(Phaser.Math.Between(minX,maxX), -20, 'ice');
-                        ice.setScale(0.5).setBounce(0.3).setCollideWorldBounds(true);
-                        ice.spawnTime=this.time.now;
-                    }
-                });
+  iceGroup = this.physics.add.group();
 
-                // Lasso
-                this.lassoLine=this.add.graphics();
-                this.grabbed=null;
+  this.time.addEvent({
+    delay: 1000,
+    loop: true,
+    callback: () => {
+      const ice = iceGroup.create(
+        Phaser.Math.Between(w/2 - 80, w/2 + 80),
+        -40,
+        'ice'
+      );
+      ice.setScale(0.3);
+    }
+  });
 
-                // Input
-                this.input.on('pointerdown', pointer=>{
-                    this.iceCubes.children.iterate(ice=>{
-                        if(!ice) return;
-                        if(Phaser.Math.Distance.Between(pointer.x,pointer.y,ice.x,ice.y)<60){
-                            this.grabbed=ice;
-                            ice.body.allowGravity=false;
-                        }
-                    });
-                });
-                this.input.on('pointerup', ()=>{
-                    if(this.grabbed){ this.grabbed.body.allowGravity=true; this.grabbed=null; }
-                });
+  rope = this.add.graphics();
 
-                // Collider with cup for scoring
-                this.physics.add.collider(this.iceCubes, this.cupCollider, (ice)=>{
-                    if(!ice.active) return;
-                    const elapsed=(this.time.now - ice.spawnTime)/1000;
-                    let points = elapsed <= 2 ? 2 : 1;
-                    ice.destroy();
-                    this.score+=points;
-                    this.scoreText.setText('Score: '+this.score);
+  this.input.on('pointerdown', p => {
+    iceGroup.children.iterate(ice => {
+      if (!ice) return;
+      if (Phaser.Math.Distance.Between(p.x,p.y,ice.x,ice.y) < 40) {
+        grabbed = ice;
+        ice.body.allowGravity = false;
+      }
+    });
+  });
 
-                    // Play sound after first user tap
-                    this.catchSound.play();
-                });
-            },
-            update: function(){
-                this.lassoLine.clear();
-                if(this.grabbed){
-                    const p=this.input.activePointer;
-                    this.grabbed.setPosition(p.x,p.y);
-                    this.lassoLine.lineStyle(4,0x00ffff,1);
-                    this.lassoLine.beginPath();
-                    this.lassoLine.moveTo(p.x,p.y);
-                    this.lassoLine.lineTo(p.x,p.y-20);
-                    this.lassoLine.strokePath();
-                }
-            }
-        }
-    };
+  this.input.on('pointerup', () => {
+    if (grabbed) {
+      grabbed.body.allowGravity = true;
+      grabbed = null;
+    }
+  });
 
-    new Phaser.Game(config);
-    document.removeEventListener('click', initGame);
-});
+  this.physics.add.collider(iceGroup, cup, ice => {
+    ice.destroy();
+    score++;
+    scoreText.setText('Score: ' + score);
+  });
+}
+
+function update() {
+  rope.clear();
+  if (grabbed) {
+    grabbed.setPosition(this.input.x, this.input.y);
+    rope.lineStyle(4, 0x00ffff);
+    rope.beginPath();
+    rope.moveTo(this.input.x, this.input.y);
+    rope.lineTo(this.input.x, this.input.y - 20);
+    rope.strokePath();
+  }
+}
 </script>
 
 </body>
