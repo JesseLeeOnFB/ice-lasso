@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <style>
-body { margin:0; }
+body { margin:0; background: #87CEFA; }
 canvas { display:block; margin:0 auto; }
 </style>
 </head>
@@ -28,7 +28,7 @@ const config = {
   height: window.innerHeight,
   physics: {
     default: 'arcade',
-    arcade: { gravity: { y: 280 }, debug: false }
+    arcade: { gravity: { y: 200 }, debug: false }
   },
   scene: { preload, create, update }
 };
@@ -36,11 +36,9 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
-  this.load.image('bgSky','https://images.pexels.com/photos/355465/pexels-photo-355465.jpeg?auto=compress&cs=tinysrgb&w=800'); 
-  this.load.image('cloud1','https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Clouds_%28PSF%29.png/800px-Clouds_%28PSF%29.png');
-  this.load.image('cloud2','https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Clouds_in_sky_%28PSF%29.png/800px-Clouds_in_sky_%28PSF%29.png');
-  this.load.image('cup','https://upload.wikimedia.org/wikipedia/commons/3/32/Cartoon_jail_cell.png');
-  this.load.image('ice','https://gallery.yopriceville.com/var/resizes/Free-Clipart-Pictures/Drinks-PNG-/Transparent_Ice_Cube_PNG_Clipart.png?m=1629831300');
+  this.load.image('bgSky','https://upload.wikimedia.org/wikipedia/commons/3/3c/Sky_-_Blue_-_Clouds.jpg'); // simple sky
+  this.load.image('cup','https://upload.wikimedia.org/wikipedia/commons/3/32/Cartoon_jail_cell.png'); // cup/jail
+  this.load.image('ice','https://upload.wikimedia.org/wikipedia/commons/3/3b/Ice_cube.png'); // ice cube
 }
 
 function create() {
@@ -48,9 +46,6 @@ function create() {
   const h = this.scale.height;
 
   this.add.image(w/2, h/2, 'bgSky').setDisplaySize(w,h);
-
-  this.cloudA = this.add.tileSprite(0,h/3, w, 200, 'cloud1').setOrigin(0,0).setAlpha(0.6);
-  this.cloudB = this.add.tileSprite(0,h/4, w, 200, 'cloud2').setOrigin(0,0).setAlpha(0.6);
 
   const title = this.add.text(w/2, h/2 - 80, 'ICE CAPTURE', {
     font: '48px Arial',
@@ -81,13 +76,15 @@ function startGame() {
   highText = this.add.text(20,50,'High: ' + highScore,{ font:'20px Arial', fill:'#000' });
   missText = this.add.text(20,80,'Misses: 0 / ' + MAX_MISSES,{ font:'20px Arial', fill:'#aa0000' });
 
-  const cup = this.add.image(w/2, h-120, 'cup').setScale(0.6);
+  // Big cup
+  const cup = this.add.image(w/2, h-150, 'cup').setScale(1.5);
   cup.setOrigin(0.5,0);
 
+  // Catch zone (smaller than cup for skill)
   catchZone = this.add.rectangle(
     w/2,
-    h - 70,
-    110,
+    h - 60,
+    120,
     30,
     0xff0000,
     0
@@ -97,7 +94,7 @@ function startGame() {
   iceGroup = this.physics.add.group();
 
   spawnTimer = this.time.addEvent({
-    delay: 900,
+    delay: 1000,
     loop: true,
     callback: () => spawnIce.call(this)
   });
@@ -107,7 +104,7 @@ function startGame() {
   this.input.on('pointerdown', p => {
     iceGroup.children.iterate(ice => {
       if (!ice || !ice.active) return;
-      if (Phaser.Math.Distance.Between(p.x,p.y,ice.x,ice.y) < 55) {
+      if (Phaser.Math.Distance.Between(p.x,p.y,ice.x,ice.y) < 50) {
         grabbed = ice;
         ice.grabbed = true;
         ice.body.setAllowGravity(false);
@@ -135,7 +132,7 @@ function startGame() {
       localStorage.setItem('iceHighScore', highScore);
       highText.setText('High: ' + highScore);
 
-      const text = this.add.text(w/2,150,'NEW HIGH SCORE!',{font:'32px Arial',fill:'#ffdd00'}).setOrigin(0.5);
+      const text = this.add.text(this.scale.width/2,150,'NEW HIGH SCORE!',{font:'32px Arial',fill:'#ffdd00'}).setOrigin(0.5);
       this.tweens.add({
         targets:text, y:100, alpha:0, duration:1200,
         onComplete:()=>text.destroy()
@@ -148,14 +145,14 @@ function spawnIce() {
   const w = this.scale.width;
 
   const ice = iceGroup.create(
-    Phaser.Math.Between(w/2 - 260, w/2 + 260),
+    Phaser.Math.Between(w/2 - 200, w/2 + 200),
     -60,
     'ice'
   );
-  ice.setScale(0.6);
+  ice.setScale(0.8);
   ice.grabbed = false;
 
-  ice.body.checkWorldBounds = true;
+  ice.body.setCollideWorldBounds(true);
   ice.body.onWorldBounds = true;
 
   ice.body.world.on('worldbounds', body => {
@@ -166,9 +163,9 @@ function spawnIce() {
       if (misses >= MAX_MISSES) {
         spawnTimer.remove(false);
         iceGroup.clear(true,true);
-        this.add.rectangle(w/2,this.scale.height/2,w,this.scale.height,0x000000,0.6);
-        this.add.text(w/2,this.scale.height/2 - 40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
-        this.add.text(w/2,this.scale.height/2 + 20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
+        this.add.rectangle(this.scale.width/2,this.scale.height/2,this.scale.width,this.scale.height,0x000000,0.6);
+        this.add.text(this.scale.width/2,this.scale.height/2 - 40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
+        this.add.text(this.scale.width/2,this.scale.height/2 + 20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
           .once('pointerdown',()=>location.reload());
       }
     }
@@ -177,9 +174,6 @@ function spawnIce() {
 
 function update() {
   if (!gameStarted) return;
-
-  this.cloudA.tilePositionX += 0.2; 
-  this.cloudB.tilePositionX -= 0.15;
 
   rope.clear();
   if (grabbed) {
