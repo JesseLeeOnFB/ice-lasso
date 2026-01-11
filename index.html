@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ice Capture</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+<style>
+body { margin:0; background:#7ecbff; }
+canvas { display:block; margin:0 auto; }
+</style>
+</head>
+<body>
+
+<script>
+let gameStarted = false;
+let iceGroup, catchZone, scoreText, score = 0;
+let grabbed = null, rope, spawnTimer;
+
+const config = {
+  type: Phaser.CANVAS,
+  width: window.innerWidth,
+  height: window.innerHeight,
+  physics: {
+    default: 'arcade',
+    arcade: { gravity: { y: 260 }, debug: false }
+  },
+  scene: { preload, create, update }
+};
+
+new Phaser.Game(config);
+
+function preload() {
+  this.load.image('ice','https://upload.wikimedia.org/wikipedia/commons/3/3b/Ice_cube.png');
+}
+
+function create() {
+  const w = this.scale.width;
+  const h = this.scale.height;
+
+  this.cameras.main.setBackgroundColor('#7ecbff');
+
+  // ===== START MENU =====
+  const title = this.add.text(w/2, h/2 - 80, 'ICE CAPTURE', {
+    font: '48px Arial',
+    fill: '#003366'
+  }).setOrigin(0.5);
+
+  const tapText = this.add.text(w/2, h/2, 'Tap to Play', {
+    font: '28px Arial',
+    fill: '#003366'
+  }).setOrigin(0.5);
+
+  this.input.once('pointerdown', () => {
+    title.destroy();
+    tapText.destroy();
+    startGame.call(this);
+  });
+}
+
+function startGame() {
+  gameStarted = true;
+
+  const w = this.scale.width;
+  const h = this.scale.height;
+
+  score = 0;
+
+  scoreText = this.add.text(20,20,'Score: 0',{
+    font:'24px Arial', fill:'#000'
+  });
+
+  // ===== CUP VISUAL =====
+  const cupGfx = this.add.graphics();
+  cupGfx.lineStyle(6, 0x222222);
+  cupGfx.strokeRoundedRect(w/2 - 180, h - 280, 360, 220, 20);
+
+  // ===== CATCH ZONE (FIXED & WIDE) =====
+  catchZone = this.add.rectangle(
+    w/2,
+    h - 140,
+    300,
+    60,
+    0x00ff00,
+    0
+  );
+  this.physics.add.existing(catchZone, true);
+
+  iceGroup = this.physics.add.group();
+
+  spawnTimer = this.time.addEvent({
+    delay: 900,
+    loop: true,
+    callback: () => spawnIce.call(this)
+  });
+
+  rope = this.add.graphics();
+
+  // ===== INPUT =====
+  this.input.on('pointerdown', p => {
+    iceGroup.children.iterate(ice => {
+      if (!ice || !ice.active) return;
+      if (Phaser.Math.Distance.Between(p.x,p.y,ice.x,ice.y) < 55) {
+        grabbed = ice;
+        ice.body.setAllowGravity(false);
+        ice.body.setVelocity(0);
+      }
+    });
+  });
+
+  this.input.on('pointerup', () => {
+    if (grabbed) {
+      grabbed.body.setAllowGravity(true);
+      grabbed = null;
+    }
+  });
+
+  // ===== RELIABLE SCORING =====
+  this.physics.add.overlap(iceGroup, catchZone, (zone, ice) => {
+    if (!ice.active) return;
+
+    ice.disableBody(true, true);
+
+    score++;
+    scoreText.setText('Score: ' + score);
+
+    // pop effect
+    const pop = this.add.circle(ice.x, ice.y, 10, 0xffffff);
+    this.tweens.add({
+      targets: pop,
+      scale: 3,
+      alpha: 0,
+      duration: 300,
+      onComplete: () => pop.destroy()
+    });
+  });
+}
+
+function spawnIce() {
+  const w = this.scale.width;
+  const ice = iceGroup.create(
+    Phaser.Math.Between(w/2 - 130, w/2 + 130),
+    -60,
+    'ice'
+  );
+  ice.setScale(0.45);
+  ice.setBounce(0);
+}
+
+function update() {
+  if (!gameStarted) return;
+
+  rope.clear();
+  if (grabbed) {
+    grabbed.setPosition(this.input.x, this.input.y);
+    rope.lineStyle(4, 0x00ffff);
+    rope.beginPath();
+    rope.moveTo(this.input.x, this.input.y);
+    rope.lineTo(grabbed.x, grabbed.y);
+    rope.strokePath();
+  }
+}
+</script>
+
+</body>
+</html>
