@@ -19,44 +19,58 @@ let score = 0;
 let scoreText;
 
 function preload() {
+    // Ice cube + cup bar + lasso
     this.load.image('ice', 'https://labs.phaser.io/assets/sprites/ice.png');
     this.load.image('cup_bar', 'https://labs.phaser.io/assets/sprites/block.png');
     this.load.image('lasso', 'https://labs.phaser.io/assets/sprites/blue_ball.png');
+    this.load.image('shine', 'https://labs.phaser.io/assets/sprites/particle.png');
 }
 
 function create() {
+    // Ice cubes group
     iceCubes = this.physics.add.group();
 
+    // Spawn ice cubes
     this.time.addEvent({
         delay: 800,
         callback: () => {
             const ice = iceCubes.create(
-                Phaser.Math.Between(100, 700),
+                Phaser.Math.Between(150, 650),
                 -20,
                 'ice'
             );
             ice.setScale(0.5);
+            ice.setTint(0x99ffff); // light blue tint
             ice.melt = 100;
             ice.setBounce(0.5);
             ice.setCollideWorldBounds(true);
+
+            // Add shine overlay
+            let shine = this.add.sprite(ice.x, ice.y, 'shine').setScale(0.2);
+            shine.setAlpha(0.5);
+            shine.setDepth(1);
+            ice.shine = shine;
         },
         loop: true
     });
 
-    // Cup bars
+    // Cup bars - metallic look
     const barCount = 6;
     const barWidth = 50;
     for (let i = 0; i < barCount; i++) {
         let bar = this.physics.add.staticImage(300 + i * barWidth, 500, 'cup_bar');
-        bar.setScale(1, 0.2).refreshBody();
+        bar.setScale(1, 0.3).refreshBody(); // thicker horizontal bars
+        bar.setTint(0xaaaaaa); // metallic gray
         cupBars.push(bar);
     }
 
-    scoreText = this.add.text(10, 10, 'Score: 0', { fontSize: '24px', fill: '#fff' });
+    // Score text
+    scoreText = this.add.text(10, 10, 'Score: 0', { fontSize: '24px', fill: '#000' });
 
+    // Lasso graphics
     lassoLine = this.add.graphics();
 
-    // Input for lasso
+    // Input for grabbing ice cubes
     this.input.on('pointerdown', pointer => {
         iceCubes.children.iterate(ice => {
             if (!ice) return;
@@ -74,6 +88,7 @@ function create() {
         }
     });
 
+    // Collide ice with cup bars
     cupBars.forEach(bar => {
         this.physics.add.collider(iceCubes, bar);
     });
@@ -86,6 +101,7 @@ function update() {
         const pointer = this.input.activePointer;
         grabbed.setPosition(pointer.x, pointer.y);
 
+        // Draw simple lasso line
         lassoLine.lineStyle(4, 0x00ffff, 1);
         lassoLine.beginPath();
         lassoLine.moveTo(pointer.x, pointer.y);
@@ -93,14 +109,24 @@ function update() {
         lassoLine.strokePath();
     }
 
+    // Melting mechanic
     iceCubes.children.iterate(ice => {
         if (!ice) return;
+
+        // Update shine position
+        if (ice.shine) {
+            ice.shine.x = ice.x;
+            ice.shine.y = ice.y;
+        }
+
         let overCup = cupBars.some(bar => Phaser.Geom.Intersects.RectangleToRectangle(ice.getBounds(), bar.getBounds()));
         if (overCup) {
             ice.melt -= 0.5;
             ice.setScale(0.5 * (ice.melt / 100));
             ice.setAlpha(ice.melt / 100);
+            if (ice.shine) ice.shine.setAlpha(ice.melt / 100);
             if (ice.melt <= 0) {
+                if (ice.shine) ice.shine.destroy();
                 ice.destroy();
                 score++;
                 scoreText.setText('Score: ' + score);
