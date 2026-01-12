@@ -2,44 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ohio Realtors Beta</title>
+  <title>Ice Lasso</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { margin:0; font-family:Arial,sans-serif; background:#222; color:#fff; }
-    .container { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
-    input, textarea, button { padding:10px; margin:5px 0; border-radius:5px; border:none; font-size:1em; width:100%; max-width:350px; }
-    #dragDrop { border:2px dashed #fff; padding:20px; text-align:center; border-radius:5px; margin-top:10px; }
-    button { background:#28a745; color:#fff; cursor:pointer; }
-    #status { margin-top:10px; text-align:center; }
+    body { margin:0; overflow:hidden; background:#87ceeb; font-family:Arial,sans-serif; }
+    canvas { display:block; margin:0 auto; background:#87ceeb; }
+    #startScreen {
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.6); color:white; display:flex;
+      align-items:center; justify-content:center; flex-direction:column; font-size:2em;
+      z-index:10;
+      cursor:pointer;
+    }
+    #scoreboard {
+      position:absolute; top:10px; left:10px; color:white; font-size:1.2em;
+      background:rgba(0,0,0,0.3); padding:5px 10px; border-radius:5px;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Ohio Realtors PDF Autofill</h1>
-
-    <!-- Google Login Button -->
-    <div id="g_id_onload"
-         data-client_id="865490150118-ti166sdlmjgqrcd552ttigauldt36ik5.apps.googleusercontent.com"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false">
-    </div>
-    <div class="g_id_signin" data-type="standard"></div>
-
-    <!-- Input Fields -->
-    <input type="text" id="buyerName" placeholder="Buyer Name">
-    <input type="text" id="sellerName" placeholder="Seller Name">
-    <input type="text" id="propertyAddress" placeholder="Property Address">
-    <textarea id="addendums" rows="3" placeholder="Additional Notes / Addendums (Optional)"></textarea>
-
-    <!-- PDF Upload -->
-    <div id="dragDrop">Drag & drop PDFs here (desktop)</div>
-    <input type="file" id="pdfUpload" multiple accept="application/pdf">
-
-    <button id="fillBtn" disabled>Fill & Download PDFs</button>
-    <div id="status"></div>
-  </div>
-
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script type="module" src="script.js"></script>
+  <div id="startScreen">Tap to Play</div>
+  <div id="scoreboard">Score: 0 | Missed: 0 | High Score: 0</div>
+  <canvas id="gameCanvas"></canvas>
+  <script src="game2.js" type="module"></script>
 </body>
 </html>
