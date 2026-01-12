@@ -1,203 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Pig Catcher Game</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
-<style>
-body { margin:0; background:#ddd; }
-canvas { display:block; margin:0 auto; }
-</style>
+  <meta charset="UTF-8">
+  <title>Ohio Realtors Beta</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin:0; font-family:Arial,sans-serif; background:#222; color:#fff; }
+    .container { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+    input, textarea, button { padding:10px; margin:5px 0; border-radius:5px; border:none; font-size:1em; width:100%; max-width:350px; }
+    #dragDrop { border:2px dashed #fff; padding:20px; text-align:center; border-radius:5px; margin-top:10px; }
+    button { background:#28a745; color:#fff; cursor:pointer; }
+    #status { margin-top:10px; text-align:center; }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h1>Ohio Realtors PDF Autofill</h1>
 
-<script>
-let pigs = [];
-let cup;
-let scoreText, highText, missText;
-let score = 0, misses = 0;
-let highScore = localStorage.getItem('pigHighScore') || 0;
-const MAX_MISSES = 15;
-let spawnTimer;
-let gameOverOverlay, restartText;
-let pigFallSpeed = 4;
-let gameStarted = false;
-let startScreen, startText;
+    <!-- Google Login Button -->
+    <div id="g_id_onload"
+         data-client_id="865490150118-ti166sdlmjgqrcd552ttigauldt36ik5.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin" data-type="standard"></div>
 
-const config = {
-  type: Phaser.CANVAS,
-  width: window.innerWidth,
-  height: window.innerHeight,
-  scene: { preload, create, update }
-};
+    <!-- Input Fields -->
+    <input type="text" id="buyerName" placeholder="Buyer Name">
+    <input type="text" id="sellerName" placeholder="Seller Name">
+    <input type="text" id="propertyAddress" placeholder="Property Address">
+    <textarea id="addendums" rows="3" placeholder="Additional Notes / Addendums (Optional)"></textarea>
 
-new Phaser.Game(config);
+    <!-- PDF Upload -->
+    <div id="dragDrop">Drag & drop PDFs here (desktop)</div>
+    <input type="file" id="pdfUpload" multiple accept="application/pdf">
 
-function preload() {
-  this.load.image('bg','assets/IMG_2835.jpeg');    
-  this.load.image('cup','assets/IMG_2839.jpeg');   // new cup image
-  this.load.image('pig','assets/IMG_2836.jpeg');   
-}
+    <button id="fillBtn" disabled>Fill & Download PDFs</button>
+    <div id="status"></div>
+  </div>
 
-function create() {
-  const w = this.scale.width;
-  const h = this.scale.height;
-
-  // Background
-  this.add.image(w/2,h/2,'bg').setDisplaySize(w,h);
-
-  // Start screen overlay
-  startScreen = this.add.rectangle(w/2,h/2,w,h,0x000000,0.6);
-  startText = this.add.text(w/2,h/2,'TAP TO PLAY',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
-
-  // Tap to start
-  this.input.once('pointerdown', ()=>{
-    startScreen.destroy();
-    startText.destroy();
-    gameStarted = true;
-    startGame.call(this);
-  });
-
-  // UI
-  scoreText = this.add.text(20,20,'Score: 0',{font:'24px Arial',fill:'#fff'});
-  highText = this.add.text(20,50,'High: '+highScore,{font:'20px Arial',fill:'#fff'});
-  missText = this.add.text(20,80,'Misses: 0 / '+MAX_MISSES,{font:'20px Arial',fill:'#ff5555'});
-}
-
-function startGame() {
-  const w = this.scale.width;
-  const h = this.scale.height;
-
-  // Cup (smaller, harder)
-  cup = this.add.image(w/2,h-150,'cup').setDisplaySize(100,100).setOrigin(0.5,1);
-
-  // Move cup with pointer
-  this.input.on('pointermove', pointer => {
-    cup.x = Phaser.Math.Clamp(pointer.x, cup.displayWidth/2, w - cup.displayWidth/2);
-  });
-
-  // Spawn pigs periodically
-  spawnTimer = this.time.addEvent({
-    delay: 1200,
-    loop: true,
-    callback: ()=>spawnPig.call(this)
-  });
-}
-
-function spawnPig() {
-  const w = this.scale.width;
-  let pigsPerSpawn = 1;
-
-  // Multiple pigs for rain effect
-  if(score >= 50) pigsPerSpawn = 6;
-  else if(score >= 30) pigsPerSpawn = 4;
-  else if(score >= 10) pigsPerSpawn = 2;
-
-  for(let i=0; i<pigsPerSpawn; i++){
-    const xPos = Phaser.Math.Between(50, w-50);
-    const pig = this.add.image(xPos, -50, 'pig');
-    pig.setScale(0.2);
-    pigs.push(pig);
-  }
-}
-
-function update() {
-  if(!gameStarted) return; // wait for tap to play
-
-  const h = this.scale.height;
-
-  if(score >= 50) pigFallSpeed = 12;
-  else if(score >= 30) pigFallSpeed = 9;
-  else if(score >= 10) pigFallSpeed = 6;
-  else pigFallSpeed = 4;
-
-  for (let i = pigs.length - 1; i >= 0; i--) {
-    const pig = pigs[i];
-    pig.y += pigFallSpeed;
-
-    // Collision with cup
-    if (
-      pig.y + pig.displayHeight/2 >= cup.y - cup.displayHeight &&
-      pig.y - pig.displayHeight/2 <= cup.y &&
-      pig.x + pig.displayWidth/2 >= cup.x - cup.displayWidth/2 &&
-      pig.x - pig.displayWidth/2 <= cup.x + cup.displayWidth/2
-    ) {
-      pig.destroy();
-      pigs.splice(i,1);
-      score++;
-      scoreText.setText('Score: '+score);
-
-      // High score pulse
-      if(score > highScore){
-        highScore = score;
-        localStorage.setItem('pigHighScore',highScore);
-        highText.setText('High: '+highScore);
-        this.tweens.add({
-          targets: highText,
-          scale: 1.5,
-          duration: 200,
-          yoyo: true
-        });
-      }
-      continue;
-    }
-
-    // Missed pigs
-    if (pig.y - pig.displayHeight/2 > h) {
-      pig.destroy();
-      pigs.splice(i,1);
-      misses++;
-      missText.setText('Misses: '+misses+' / '+MAX_MISSES);
-      if(misses >= MAX_MISSES) gameOver.call(this);
-    }
-  }
-}
-
-function resetGame() {
-  if(gameOverOverlay) { 
-    this.tweens.add({
-      targets: gameOverOverlay,
-      alpha: 0,
-      duration: 500,
-      onComplete: ()=> gameOverOverlay.destroy()
-    });
-    gameOverOverlay = null;
-  }
-  if(restartText) { restartText.destroy(); restartText = null; }
-
-  score = 0;
-  misses = 0;
-  pigFallSpeed = 4;
-
-  scoreText.setText('Score: 0');
-  missText.setText('Misses: 0 / '+MAX_MISSES);
-
-  pigs.forEach(p => p.destroy());
-  pigs = [];
-
-  spawnTimer = this.time.addEvent({
-    delay: 1200,
-    loop: true,
-    callback: ()=>spawnPig.call(this)
-  });
-}
-
-function gameOver(){
-  spawnTimer.remove(false);
-
-  const w = this.scale.width;
-  const h = this.scale.height;
-
-  gameOverOverlay = this.add.rectangle(w/2,h/2,w,h,0x000000,0.5);
-  this.add.text(w/2,h/2-40,'GAME OVER',{font:'48px Arial',fill:'#fff'}).setOrigin(0.5);
-  restartText = this.add.text(w/2,h/2+20,'Tap to Restart',{font:'24px Arial',fill:'#fff'}).setOrigin(0.5)
-      .setInteractive()
-      .once('pointerdown',()=>resetGame.call(this));
-
-  cup.setDepth(2);
-}
-</script>
-
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
